@@ -1,6 +1,7 @@
 [package]
 name = "vanish"
 version = "0.1.0"
+description = "A simple config tool to make locally trusted X.509 development certificates for you domains"
 edition = "2021"
 license-file = "LICENSE"
 author = "Shubham singh	<github: github.com/shubhexists>"
