@@ -1,4 +1,4 @@
-use super::{distinguished_name::DistinguishedName, errors::X509Result};
+use super::{distinguished_name::DistinguishedName, errors::X509Result, Certificate};
 use crate::{utils::generate_cert_key_pair, x509::errors::X509Error};
 use openssl::{
     error::ErrorStack,
@@ -12,15 +12,14 @@ use std::{
     io::{self, Write},
 };
 
-#[derive(Debug)]
 pub struct CAReq {
     rsa_priv: Rsa<Private>,
     pkey: PKey<Private>,
     distinguished_name: DistinguishedName,
 }
 
-impl CAReq {
-    pub fn new(distinguished_name: DistinguishedName) -> X509Result<Self> {
+impl Certificate for CAReq {
+    fn new(distinguished_name: DistinguishedName) -> X509Result<Self> {
         match generate_cert_key_pair() {
             Ok((rsa_priv, pkey)) => Ok(CAReq {
                 rsa_priv,
@@ -30,7 +29,9 @@ impl CAReq {
             Err(err) => Err(X509Error::InitCARequestCertKeyPairError(err)),
         }
     }
+}
 
+impl CAReq {
     pub fn generate_certificate_sign_request(ca_req: Self) -> X509Result<X509Req> {
         let distinguished_name: X509Name =
             DistinguishedName::distinguished_name_builder(ca_req.distinguished_name)?;

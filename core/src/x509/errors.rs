@@ -1,4 +1,4 @@
-use crate::errors::CertKeyPairError;
+use crate::errors::{CertKeyPairError, SerialNumberError};
 use core::fmt;
 use openssl::error::ErrorStack;
 use std::{error::Error, io};
@@ -15,46 +15,58 @@ pub enum X509Error {
     X509CSRToPEMError(ErrorStack),
     X509PEMFileCreationError(io::Error),
     X509WriteToFileError(io::Error),
+    InitSerialNumberGenerationError(SerialNumberError),
+    GenerateNotBeforeError(ErrorStack),
+    GenerateNotAfterError(ErrorStack),
 }
 
 impl fmt::Display for X509Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            X509Error::InitCARequestCertKeyPairError(err) => {
+            Self::InitCARequestCertKeyPairError(err) => {
                 write!(
                     f,
                     "Failed to initialize Certificate Signing Request : {}",
                     err
                 )
             }
-            X509Error::X509NameBuilderInitializeError(err) => {
+            Self::X509NameBuilderInitializeError(err) => {
                 write!(f, "Failed to initialize Name Builder: {}", err)
             }
-            X509Error::X509NameBuilderEntryError(err, entry, value) => {
+            Self::X509NameBuilderEntryError(err, entry, value) => {
                 write!(
                     f,
                     "Error adding entry {} in name builder with value {} : {}",
                     entry, value, err
                 )
             }
-            X509Error::X509CertificateBuilderInitializeError(err) => {
+            Self::X509CertificateBuilderInitializeError(err) => {
                 write!(f, "Failed to initialize Certificate Builder: {}", err)
             }
-            X509Error::X509CertificateBuilerEntryError(err, entry) => {
+            Self::X509CertificateBuilerEntryError(err, entry) => {
                 write!(
                     f,
                     "Error adding entry {} in Certificate builder : {}",
                     entry, err
                 )
             }
-            X509Error::X509CSRToPEMError(err) => {
+            Self::X509CSRToPEMError(err) => {
                 write!(f, "Error Converting Certificate to PEM : {}", err)
             }
-            X509Error::X509PEMFileCreationError(err) => {
+            Self::X509PEMFileCreationError(err) => {
                 write!(f, "Error creating PEM file at specified location: {}", err)
             }
-            X509Error::X509WriteToFileError(err) => {
+            Self::X509WriteToFileError(err) => {
                 write!(f, "Error writing to specified PEM file: {}", err)
+            }
+            Self::InitSerialNumberGenerationError(err) => {
+                write!(f, "Error Generating Random Serial Number -> {}", err)
+            }
+            Self::GenerateNotBeforeError(err) => {
+                write!(f, "Error Generating Not Before Time: {}", err)
+            }
+            Self::GenerateNotAfterError(err) => {
+                write!(f, "Error Generating Not After Time: {}", err)
             }
         }
     }

@@ -99,18 +99,18 @@ fn load_ca(cert_path: &str, key_path: &str) -> (X509, PKey<Private>) {
     (cert, key)
 }
 
-fn generate_certificate_from_csr() {
-    let csr_path = "whatever the path is";
-    let mut csr_file = File::open(csr_path).expect("Unable to open CSR file");
-    let mut csr_pem = String::new();
-    csr_file
-        .read_to_string(&mut csr_pem)
-        .expect("Unable to read CSR file");
+// fn generate_certificate_from_csr() {
+//     let csr_path = "whatever the path is";
+//     let mut csr_file = File::open(csr_path).expect("Unable to open CSR file");
+//     let mut csr_pem = String::new();
+//     csr_file
+//         .read_to_string(&mut csr_pem)
+//         .expect("Unable to read CSR file");
 
-    // taken from examples # https://docs.rs/x509-parser/latest/x509_parser/pem/index.html#examples
+//     // taken from examples # https://docs.rs/x509-parser/latest/x509_parser/pem/index.html#examples
 
-    // let pem = Pem::parse_x509(csr_pem.as_bytes()).expect("Failed to parse PEM");
-}
+//     // let pem = Pem::parse_x509(csr_pem.as_bytes()).expect("Failed to parse PEM");
+// }
 
 fn generate_certificate(
     ca_cert: &X509,
