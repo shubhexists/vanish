@@ -6,8 +6,8 @@ edition = "2021"
 license-file = "LICENSE"
 author = "Shubham singh	<github: github.com/shubhexists>"
 repository = "https://github.com/shubhexists/vanish"
-categories = ["windows", "macos", "linux","tls", "firefox", "ios", "chrome", "https", "certificates", "localhost", "local-development", "root-ca"]
-keywords = ["windows", "macos", "linux","tls", "firefox", "ios", "chrome", "https", "certificates", "localhost", "local-development", "root-ca"]
+categories = ["development-tools", "command-line-utilities", "parsing", "os", "hardware-support"]
+keywords = ["https", "certificates", "localhost", "local-development", "root-ca"]
 readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
