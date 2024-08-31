@@ -1,5 +1,6 @@
 mod commands;
 mod errors;
+mod trust_stores;
 mod utils;
 mod x509;
 use clap::{Parser, Subcommand};
