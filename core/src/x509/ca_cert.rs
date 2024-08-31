@@ -12,9 +12,11 @@ use openssl::{
     rsa::Rsa,
     x509::{extension::BasicConstraints, X509Builder, X509Name, X509},
 };
+use std::io::Write;
+use std::{fs::File, io};
 
 pub struct CACert {
-    rsa_priv: Rsa<Private>,
+    _rsa_priv: Rsa<Private>,
     pkey: PKey<Private>,
     distinguished_name: DistinguishedName,
     version: X509Version,
@@ -34,7 +36,7 @@ impl Certificate for CACert {
                     let not_after: Asn1Time = Asn1Time::days_from_now(365 * 2)
                         .map_err(|err: ErrorStack| X509Error::GenerateNotAfterError(err))?;
                     Ok(CACert {
-                        rsa_priv,
+                        _rsa_priv: rsa_priv,
                         pkey,
                         distinguished_name,
                         version: X509Version::V3,
@@ -108,4 +110,43 @@ impl Certificate for CACert {
     }
 }
 
-impl CACert {}
+impl CACert {
+    pub fn load_ca_cert(cert_path: &str, key_path: &str) -> X509Result<(X509, PKey<Private>)> {
+        let cert: X509 = X509::from_pem(&std::fs::read(cert_path).map_err(|err: io::Error| {
+            X509Error::ErrorReadingCertFile(err, cert_path.to_string())
+        })?)
+        .map_err(|err: ErrorStack| {
+            X509Error::ErrorConvertingFileToData(err, cert_path.to_string())
+        })?;
+        let key: PKey<Private> =
+            PKey::private_key_from_pem(&std::fs::read(key_path).map_err(|err: io::Error| {
+                X509Error::ErrorReadingCertFile(err, cert_path.to_string())
+            })?)
+            .map_err(|err: ErrorStack| {
+                X509Error::ErrorConvertingFileToData(err, key_path.to_string())
+            })?;
+        Ok((cert, key))
+    }
+
+    pub fn save_cert(cert: &X509, path: &str) -> X509Result<()> {
+        let mut file: File = File::create(path)
+            .map_err(|err: io::Error| X509Error::X509PEMFileCreationError(err))?;
+        file.write_all(
+            &cert
+                .to_pem()
+                .map_err(|err: ErrorStack| X509Error::PEMEncodingError(err))?,
+        )
+        .map_err(|err: io::Error| X509Error::X509WriteToFileError(err))?;
+        Ok(())
+    }
+
+    pub fn save_key(key: &PKey<Private>, path: &str) -> X509Result<()> {
+        let mut file: File = File::create(path).unwrap();
+        file.write_all(
+            &key.private_key_to_pem_pkcs8()
+                .map_err(|err: ErrorStack| X509Error::PKCS8EncodingError(err))?,
+        )
+        .map_err(|err: io::Error| X509Error::X509WriteToFileError(err))?;
+        Ok(())
+    }
+}

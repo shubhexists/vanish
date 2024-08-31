@@ -7,6 +7,8 @@ pub type X509Result<T> = Result<T, X509Error>;
 
 #[derive(Debug)]
 pub enum X509Error {
+    PKCS8EncodingError(ErrorStack),
+    PEMEncodingError(ErrorStack),
     InitCARequestCertKeyPairError(CertKeyPairError),
     X509NameBuilderInitializeError(ErrorStack),
     X509NameBuilderEntryError(ErrorStack, String, String),
@@ -22,6 +24,8 @@ pub enum X509Error {
     ErrorGettingPublicKeyFromCSR(ErrorStack),
     KeyUsageBuildError(ErrorStack),
     ExtendedKeyUsageBuildError(ErrorStack),
+    ErrorReadingCertFile(io::Error, String),
+    ErrorConvertingFileToData(ErrorStack, String),
 }
 
 impl fmt::Display for X509Error {
@@ -89,6 +93,22 @@ impl fmt::Display for X509Error {
                 write!(
                     f,
                     "Error building Extended Key Usage for Certificate: {}",
+                    err
+                )
+            }
+            Self::ErrorReadingCertFile(err, path) => {
+                writeln!(f, "Error Reading Cert File at Path {} : {}", path, err)
+            }
+            Self::ErrorConvertingFileToData(err, path) => {
+                writeln!(f, "Error Converting file {} to desired data: {}", path, err)
+            }
+            Self::PKCS8EncodingError(err) => {
+                writeln!(f, "Failed to encode generated key to PKCS8 Format: {}", err)
+            }
+            Self::PEMEncodingError(err) => {
+                writeln!(
+                    f,
+                    "Failed to encode generated certificate to PEM Format: {}",
                     err
                 )
             }

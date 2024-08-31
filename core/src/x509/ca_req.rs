@@ -7,6 +7,7 @@ use openssl::{
     rsa::Rsa,
     x509::{X509Name, X509Req, X509ReqBuilder},
 };
+use std::io::Read;
 use std::{
     fs::File,
     io::{self, Write},
@@ -63,5 +64,19 @@ impl CAReq {
         file.write_all(&certificate_pem)
             .map_err(|err: io::Error| X509Error::X509WriteToFileError(err))?;
         Ok(())
+    }
+
+    pub fn read_csr_from_file(file_name: &str) -> X509Result<X509Req> {
+        let mut file: File = File::open(file_name).map_err(|err: io::Error| {
+            X509Error::ErrorReadingCertFile(err, file_name.to_string())
+        })?;
+        let mut buffer: Vec<u8> = Vec::new();
+        file.read_to_end(&mut buffer).map_err(|err: io::Error| {
+            X509Error::ErrorReadingCertFile(err, file_name.to_string())
+        })?;
+        let csr: X509Req = X509Req::from_pem(&buffer).map_err(|err: ErrorStack| {
+            X509Error::ErrorConvertingFileToData(err, file_name.to_string())
+        })?;
+        Ok(csr)
     }
 }

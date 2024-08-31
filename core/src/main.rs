@@ -1,5 +1,4 @@
 mod errors;
-mod reference;
 pub mod utils;
 mod x509;
 use clap::{Parser, Subcommand};

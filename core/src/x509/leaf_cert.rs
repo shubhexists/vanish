@@ -200,7 +200,9 @@ impl LeafCert {
                                 .server_auth()
                                 .client_auth()
                                 .build()
-                                .map_err(|err: ErrorStack| X509Error::ExtendedKeyUsageBuildError(err))?,
+                                .map_err(|err: ErrorStack| {
+                                    X509Error::ExtendedKeyUsageBuildError(err)
+                                })?,
                         )
                         .map_err(|err: ErrorStack| {
                             X509Error::X509CertificateBuilerEntryError(
