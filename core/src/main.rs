@@ -1,7 +1,9 @@
+mod commands;
 mod errors;
-pub mod utils;
+mod utils;
 mod x509;
 use clap::{Parser, Subcommand};
+use commands::generate::generate;
 use std::env;
 
 #[derive(Parser)]
@@ -51,6 +53,9 @@ enum Commands {
 
         #[arg(short = 'o', long = "output")]
         output: Option<String>,
+
+        #[arg(long = "req-only")]
+        request: bool,
     },
 }
 
@@ -81,47 +86,34 @@ fn main() {
                 commonname,
                 state,
                 output,
+                request,
             } => {
                 if certfile.is_some() != keyfile.is_some() {
                     if certfile.is_some() {
-                        eprintln!("Error: Please provide corresponding `--keyfile` to the provided Certificate.");
+                        eprintln!(
+                            "Error: Please provide corresponding `--keyfile` to the certificate provided"
+                        );
                     }
                     eprintln!(
-                        "Error: Please provide corresponding `--certfile` to the provided KeyFile."
+                        "Error: Please provide corresponding `--certfile` to the keyfile provided"
                     );
                     std::process::exit(1);
                 }
 
-                for domain in domains {
-                    println!("Domain: {}", domain);
-                }
-                println!("No CA: {}", noca);
-                println!("Debug mode: {}", debug);
-
-                if let Some(csr) = csr {
-                    println!("CSR file: {}", csr);
-                }
-                if let Some(certfile) = certfile {
-                    println!("Certificate file: {}", certfile);
-                }
-                if let Some(keyfile) = keyfile {
-                    println!("Key file: {}", keyfile);
-                }
-                if let Some(organization) = organization {
-                    println!("Organization: {}", organization);
-                }
-                if let Some(country) = country {
-                    println!("Country: {}", country);
-                }
-                if let Some(commonname) = commonname {
-                    println!("Common Name: {}", commonname);
-                }
-                if let Some(state) = state {
-                    println!("State : {}", state);
-                }
-                if let Some(output) = output {
-                    println!("Output: {}", output);
-                }
+                generate(
+                    domains,
+                    noca,
+                    debug,
+                    csr,
+                    certfile,
+                    keyfile,
+                    organization,
+                    country,
+                    commonname,
+                    state,
+                    output,
+                    request,
+                )
             }
         }
     }
