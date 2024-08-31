@@ -17,8 +17,8 @@ use openssl::{
 };
 
 pub struct LeafCert {
-    rsa_priv: Rsa<Private>,
-    pkey: PKey<Private>,
+    _rsa_priv: Rsa<Private>,
+    _pkey: PKey<Private>,
     distinguished_name: DistinguishedName,
     version: X509Version,
     not_before: Asn1Time,
@@ -36,8 +36,8 @@ impl LeafCert {
                     let not_after: Asn1Time = Asn1Time::days_from_now(365 * 2)
                         .map_err(|err: ErrorStack| X509Error::GenerateNotAfterError(err))?;
                     Ok(LeafCert {
-                        rsa_priv,
-                        pkey,
+                        _rsa_priv: rsa_priv,
+                        _pkey: pkey,
                         distinguished_name,
                         version: X509Version::V3,
                         not_before,

@@ -1,13 +1,18 @@
+use crate::{
+    utils::{get_certificates_from_data_dir, save_generated_cert_key_files},
+    x509::{
+        ca_cert::CACert, ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert,
+        Certificate,
+    },
+};
+use openssl::{
+    pkey::{PKey, Private},
+    x509::{X509Req, X509},
+};
 use std::{
     fs,
     path::{Path, PathBuf},
 };
-
-use crate::x509::{
-    ca_cert::CACert, ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert,
-    Certificate,
-};
-use openssl::x509::{X509Req, X509};
 
 pub fn generate(
     domains: Vec<String>,
@@ -24,7 +29,6 @@ pub fn generate(
     request: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if request {
-        // ONLY CSR (CA Not Required)
         for domain in &domains {
             let distinguished_name: DistinguishedName = DistinguishedName {
                 common_name: commonname.clone(),
@@ -67,7 +71,6 @@ pub fn generate(
 
     if let Some(certfile) = certfile {
         if let Some(keyfile) = keyfile {
-            // No need to check for files as load_ca_cert handles and throws X509 Error
             let (cert, pkey) = CACert::load_ca_cert(&certfile, &keyfile)?;
             if let Some(csr) = &csr {
                 let distinguished_name: DistinguishedName = DistinguishedName {
@@ -107,23 +110,90 @@ pub fn generate(
         }
     }
 
-    // Check for CA files in default path
-
-    // If Not CA Cert/Key Found
-    if noca {
-        // Error - noca and no Cert/Found
+    let default_cert_key_files: Option<(X509, PKey<Private>)> = get_certificates_from_data_dir();
+    if let Some((d_cert, d_pkey)) = default_cert_key_files {
+        if let Some(csr) = &csr {
+            let distinguished_name: DistinguishedName = DistinguishedName {
+                common_name: commonname.clone(),
+                organization: organization.clone(),
+                country: country.clone(),
+                state: state.clone(),
+            };
+            let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
+            let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
+            let leaf_certificate: X509 = LeafCert::generate_certificate(
+                leaf_cert_object,
+                &d_cert,
+                &d_pkey,
+                Some(&csr_object),
+            )?;
+            // Save File
+        } else {
+            for domain in &domains {
+                let distinguished_name: DistinguishedName = DistinguishedName {
+                    // replace to domain_name
+                    common_name: commonname.clone(),
+                    organization: organization.clone(),
+                    country: country.clone(),
+                    state: state.clone(),
+                };
+                let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
+                let leaf_certificate: X509 =
+                    LeafCert::generate_certificate(leaf_cert_object, &d_cert, &d_pkey, None)?;
+                // Save file
+            }
+        }
+    } else {
+        if noca {
+            eprintln!("Error: No CA Certificates found and generation of a new one is disabled by `--no-ca`");
+            std::process::exit(1)
+        }
+        // Replace with correct variables
+        let distinguished_name: DistinguishedName = DistinguishedName {
+            common_name: commonname.clone(),
+            organization: organization.clone(),
+            country: country.clone(),
+            state: state.clone(),
+        };
+        let (created_cert, created_key) =
+            CACert::new(distinguished_name)?.generate_certificate()?;
+        save_generated_cert_key_files(&created_cert, &created_key)?;
+        if let Some(csr) = &csr {
+            let distinguished_name: DistinguishedName = DistinguishedName {
+                common_name: commonname.clone(),
+                organization: organization.clone(),
+                country: country.clone(),
+                state: state.clone(),
+            };
+            let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
+            let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
+            let leaf_certificate: X509 = LeafCert::generate_certificate(
+                leaf_cert_object,
+                &created_cert,
+                &created_key,
+                Some(&csr_object),
+            )?;
+            // Save File
+        } else {
+            for domain in &domains {
+                let distinguished_name: DistinguishedName = DistinguishedName {
+                    // replace to domain_name
+                    common_name: commonname.clone(),
+                    organization: organization.clone(),
+                    country: country.clone(),
+                    state: state.clone(),
+                };
+                let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
+                let leaf_certificate: X509 = LeafCert::generate_certificate(
+                    leaf_cert_object,
+                    &created_cert,
+                    &created_key,
+                    None,
+                )?;
+                // Save file
+            }
+        }
     }
-    // Create CA
-    if csr.is_some() {
-        // Use Created CA and CSR to Generate
-    }
-    for domain in &domains {}
-
-    // Found
-    if csr.is_some() {
-        // Use Found CA and CSR to Generate
-    }
-    for domain in domains {}
 
     Ok(())
 }

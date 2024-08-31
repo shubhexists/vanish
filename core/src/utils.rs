@@ -10,7 +10,6 @@ use openssl::{
     rsa::Rsa,
     x509::X509,
 };
-use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 
@@ -33,23 +32,82 @@ pub fn generate_certificate_serial_number() -> SerialNumberResult<Asn1Integer> {
         .map_err(|err: ErrorStack| SerialNumberError::ConvertBigNumberToASN1Error(err))?)
 }
 
-pub fn get_certificates_from_data_dir() -> Result<(X509, PKey<Private>), Box<dyn Error>> {
+pub fn get_certificates_from_data_dir() -> Option<(X509, PKey<Private>)> {
     if let Some(ref data_dir) = *x509::DATA_DIR {
         if !data_dir.exists() {
-            fs::create_dir_all(data_dir)?;
+            if let Err(err) = fs::create_dir_all(data_dir) {
+                eprintln!("Failed to create data directory: {}", err);
+                return None;
+            }
         }
         let ca_certfile: PathBuf = data_dir.join("ca_cert.pem");
         let ca_keyfile: PathBuf = data_dir.join("ca_key.pem");
-        let ca_cert_file_str: &str = ca_certfile
-            .to_str()
-            .ok_or("Failed to convert ca_certfile path to string")?;
-        let ca_key_file_str: &str = ca_keyfile
-            .to_str()
-            .ok_or("Failed to convert ca_keyfile path to string")?;
-        let (cert, pkey) = CACert::load_ca_cert(ca_cert_file_str, ca_key_file_str)?;
-        Ok((cert, pkey))
+
+        let ca_cert_file_str: &str = match ca_certfile.to_str() {
+            Some(s) => s,
+            None => {
+                eprintln!("Failed to convert ca_certfile path to string");
+                return None;
+            }
+        };
+
+        let ca_key_file_str: &str = match ca_keyfile.to_str() {
+            Some(s) => s,
+            None => {
+                eprintln!("Failed to convert ca_keyfile path to string");
+                return None;
+            }
+        };
+
+        match CACert::load_ca_cert(ca_cert_file_str, ca_key_file_str) {
+            Ok((cert, pkey)) => Some((cert, pkey)),
+            Err(err) => {
+                eprintln!("Failed to load certificates: {}", err);
+                None
+            }
+        }
     } else {
         eprintln!("Unable to get Data Directory");
-        std::process::exit(1);
+        None
+    }
+}
+
+pub fn save_generated_cert_key_files(
+    cert: &X509,
+    key: &PKey<Private>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(ref data_dir) = *x509::DATA_DIR {
+        if !data_dir.exists() {
+            fs::create_dir_all(data_dir).map_err(|err| {
+                eprintln!("Failed to create data directory: {}", err);
+                err
+            })?;
+        }
+
+        let ca_certfile: PathBuf = data_dir.join("ca_cert.pem");
+        let ca_keyfile: PathBuf = data_dir.join("ca_key.pem");
+
+        let ca_cert_file_str: &str = ca_certfile.to_str().ok_or_else(|| {
+            let err: String = "Failed to convert ca_certfile path to string".to_string();
+            eprintln!("{}", err);
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, err)
+        })?;
+
+        let ca_key_file_str: &str = ca_keyfile.to_str().ok_or_else(|| {
+            let err: String = "Failed to convert ca_keyfile path to string".to_string();
+            eprintln!("{}", err);
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, err)
+        })?;
+
+        CACert::save_cert(cert, ca_cert_file_str)?;
+        CACert::save_key(key, ca_key_file_str)?;
+        Ok(())
+    } else {
+        let err: String = "Unable to get Data Directory".to_string();
+        eprintln!("{}", err);
+        Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            err,
+        )))
     }
 }
