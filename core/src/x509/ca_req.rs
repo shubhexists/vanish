@@ -20,7 +20,7 @@ pub struct CAReq {
 }
 
 impl Certificate for CAReq {
-    type Output = X509Req;
+    type Output = (X509Req, PKey<Private>);
     fn new(distinguished_name: DistinguishedName) -> X509Result<Self> {
         match generate_cert_key_pair() {
             Ok((rsa_priv, pkey)) => Ok(CAReq {
@@ -50,7 +50,7 @@ impl Certificate for CAReq {
             .map_err(|err: ErrorStack| {
                 X509Error::X509CertificateBuilerEntryError(err, "Sign".to_string())
             })?;
-        Ok(cert_req.build())
+        Ok((cert_req.build(), self.pkey))
     }
 }
 
@@ -78,5 +78,16 @@ impl CAReq {
             X509Error::ErrorConvertingFileToData(err, file_name.to_string())
         })?;
         Ok(csr)
+    }
+
+    pub fn save_key(key: &PKey<Private>, path: &str) -> X509Result<()> {
+        let mut file: File = File::create(path)
+            .map_err(|err: io::Error| X509Error::X509PEMFileCreationError(err))?;
+        file.write_all(
+            &key.private_key_to_pem_pkcs8()
+                .map_err(|err: ErrorStack| X509Error::PKCS8EncodingError(err))?,
+        )
+        .map_err(|err: io::Error| X509Error::X509WriteToFileError(err))?;
+        Ok(())
     }
 }

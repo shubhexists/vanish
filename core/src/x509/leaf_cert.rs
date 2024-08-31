@@ -58,7 +58,7 @@ impl LeafCert {
         cert_file: &X509,
         key_file: &PKey<Private>,
         csr: Option<&X509Req>,
-    ) -> X509Result<X509> {
+    ) -> X509Result<(X509, Option<PKey<Private>>)> {
         if let Some(csr) = csr {
             let pkey: PKey<Public> = csr
                 .public_key()
@@ -129,7 +129,7 @@ impl LeafCert {
                     X509Error::X509CertificateBuilerEntryError(err, "Sign".to_string())
                 })?;
 
-            return Ok(cert_builder.build());
+            return Ok((cert_builder.build(), None));
         } else {
             match generate_cert_key_pair() {
                 Ok((_rsa_priv, pkey)) => {
@@ -219,7 +219,7 @@ impl LeafCert {
                             X509Error::X509CertificateBuilerEntryError(err, "Sign".to_string())
                         })?;
 
-                    return Ok(cert_builder.build());
+                    return Ok((cert_builder.build(), Some(pkey)));
                 }
                 Err(err) => Err(X509Error::InitCARequestCertKeyPairError(err))?,
             }
@@ -233,6 +233,17 @@ impl LeafCert {
             &cert
                 .to_pem()
                 .map_err(|err: ErrorStack| X509Error::PEMEncodingError(err))?,
+        )
+        .map_err(|err: io::Error| X509Error::X509WriteToFileError(err))?;
+        Ok(())
+    }
+
+    pub fn save_key(key: &PKey<Private>, path: &str) -> X509Result<()> {
+        let mut file: File = File::create(path)
+            .map_err(|err: io::Error| X509Error::X509PEMFileCreationError(err))?;
+        file.write_all(
+            &key.private_key_to_pem_pkcs8()
+                .map_err(|err: ErrorStack| X509Error::PKCS8EncodingError(err))?,
         )
         .map_err(|err: io::Error| X509Error::X509WriteToFileError(err))?;
         Ok(())

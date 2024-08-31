@@ -90,6 +90,11 @@ fn main() {
                     std::process::exit(1);
                 }
 
+                if request && csr.is_some() {
+                    eprint!("Error: `--req-only` and `csr` are incompatible. You can't generate requests from a request certificate.");
+                    std::process::exit(1);
+                }
+
                 let _ = generate(
                     domains, noca, csr, certfile, keyfile, country, commonname, state, output,
                     request,

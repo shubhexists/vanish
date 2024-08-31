@@ -141,7 +141,8 @@ impl CACert {
     }
 
     pub fn save_key(key: &PKey<Private>, path: &str) -> X509Result<()> {
-        let mut file: File = File::create(path).unwrap();
+        let mut file: File = File::create(path)
+            .map_err(|err: io::Error| X509Error::X509PEMFileCreationError(err))?;
         file.write_all(
             &key.private_key_to_pem_pkcs8()
                 .map_err(|err: ErrorStack| X509Error::PKCS8EncodingError(err))?,

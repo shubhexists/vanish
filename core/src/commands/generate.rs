@@ -34,7 +34,7 @@ pub fn generate(
                 country: country.clone(),
                 state: state.clone(),
             };
-            let ca_req_certificate: X509Req =
+            let (ca_req_certificate, private_key) =
                 CAReq::new(distinguished_name)?.generate_certificate()?;
             if let Some(output) = &output {
                 let output_path: &Path = Path::new(output);
@@ -46,12 +46,19 @@ pub fn generate(
                 } else {
                     std::env::current_dir()?.join(output_path)
                 };
-                let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                let file_name: PathBuf = output_path.join(format!("csr-{}.pem", domain));
                 let file_name_str: Option<&str> = file_name.to_str();
                 if let Some(file_name_str) = file_name_str {
                     CAReq::save_certificate_to_file(&ca_req_certificate, file_name_str)?;
                 } else {
                     eprintln!("Error: Error creating file for domain : {}", domain);
+                }
+                let key_file_name: PathBuf = output_path.join(format!("csr-{}-key.pem", domain));
+                let key_file_name_str: Option<&str> = key_file_name.to_str();
+                if let Some(key_file_name_str) = key_file_name_str {
+                    CAReq::save_key(&private_key, key_file_name_str)?;
+                } else {
+                    eprintln!("Error: Error creating file for key : {}", domain);
                 }
             } else {
                 let output_path: PathBuf = std::env::current_dir()?;
@@ -79,7 +86,7 @@ pub fn generate(
                 };
                 let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
                 let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                let leaf_certificate: X509 = LeafCert::generate_certificate(
+                let (leaf_certificate, _private_key) = LeafCert::generate_certificate(
                     leaf_cert_object,
                     &cert,
                     &pkey,
@@ -121,34 +128,57 @@ pub fn generate(
                         state: state.clone(),
                     };
                     let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                    let leaf_certificate: X509 =
+                    let (leaf_certificate, private_key) =
                         LeafCert::generate_certificate(leaf_cert_object, &cert, &pkey, None)?;
-                    if let Some(output) = &output {
-                        let output_path: &Path = Path::new(output);
-                        if !output_path.exists() {
-                            fs::create_dir_all(output_path)?;
-                        }
-                        let output_path: PathBuf = if output_path.is_absolute() {
-                            output_path.to_path_buf()
+                    if let Some(private_key) = private_key {
+                        if let Some(output) = &output {
+                            let output_path: &Path = Path::new(output);
+                            if !output_path.exists() {
+                                fs::create_dir_all(output_path)?;
+                            }
+                            let output_path: PathBuf = if output_path.is_absolute() {
+                                output_path.to_path_buf()
+                            } else {
+                                std::env::current_dir()?.join(output_path)
+                            };
+                            let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                            let file_name_str: Option<&str> = file_name.to_str();
+                            if let Some(file_name_str) = file_name_str {
+                                LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                            } else {
+                                eprintln!("Error: Error creating file for domain : {}", domain);
+                            }
+                            let key_file_name: PathBuf =
+                                output_path.join(format!("{}-key.pem", domain));
+                            let key_file_name_str: Option<&str> = key_file_name.to_str();
+                            if let Some(key_file_name_str) = key_file_name_str {
+                                LeafCert::save_key(&private_key, key_file_name_str)?;
+                            } else {
+                                eprintln!("Error: Error creating file for key : {}", domain);
+                            }
                         } else {
-                            std::env::current_dir()?.join(output_path)
-                        };
-                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
-                        let file_name_str: Option<&str> = file_name.to_str();
-                        if let Some(file_name_str) = file_name_str {
-                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
-                        } else {
-                            eprintln!("Error: Error creating file for domain : {}", domain);
+                            let output_path: PathBuf = std::env::current_dir()?;
+                            let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                            let file_name_str: Option<&str> = file_name.to_str();
+                            if let Some(file_name_str) = file_name_str {
+                                LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                            } else {
+                                eprintln!("Error: Error creating file for domain : {}", domain);
+                            }
+                            let key_file_name: PathBuf =
+                                output_path.join(format!("{}-key.pem", domain));
+                            let key_file_name_str: Option<&str> = key_file_name.to_str();
+                            if let Some(key_file_name_str) = key_file_name_str {
+                                LeafCert::save_key(&private_key, key_file_name_str)?;
+                            } else {
+                                eprintln!("Error: Error creating file for key : {}", domain);
+                            }
                         }
                     } else {
-                        let output_path: PathBuf = std::env::current_dir()?;
-                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
-                        let file_name_str: Option<&str> = file_name.to_str();
-                        if let Some(file_name_str) = file_name_str {
-                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
-                        } else {
-                            eprintln!("Error: Error creating file for domain : {}", domain);
-                        }
+                        eprintln!(
+                            "Oops! We lost your private key for domain {}. Please try again!",
+                            domain
+                        )
                     }
                 }
             }
@@ -170,7 +200,7 @@ pub fn generate(
             };
             let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
             let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-            let leaf_certificate: X509 = LeafCert::generate_certificate(
+            let (leaf_certificate, _private_key) = LeafCert::generate_certificate(
                 leaf_cert_object,
                 &d_cert,
                 &d_pkey,
@@ -212,34 +242,57 @@ pub fn generate(
                     state: state.clone(),
                 };
                 let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                let leaf_certificate: X509 =
+                let (leaf_certificate, private_key) =
                     LeafCert::generate_certificate(leaf_cert_object, &d_cert, &d_pkey, None)?;
-                if let Some(output) = &output {
-                    let output_path: &Path = Path::new(output);
-                    if !output_path.exists() {
-                        fs::create_dir_all(output_path)?;
-                    }
-                    let output_path: PathBuf = if output_path.is_absolute() {
-                        output_path.to_path_buf()
+                if let Some(private_key) = private_key {
+                    if let Some(output) = &output {
+                        let output_path: &Path = Path::new(output);
+                        if !output_path.exists() {
+                            fs::create_dir_all(output_path)?;
+                        }
+                        let output_path: PathBuf = if output_path.is_absolute() {
+                            output_path.to_path_buf()
+                        } else {
+                            std::env::current_dir()?.join(output_path)
+                        };
+                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                        let file_name_str: Option<&str> = file_name.to_str();
+                        if let Some(file_name_str) = file_name_str {
+                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for domain : {}", domain);
+                        }
+                        let key_file_name: PathBuf =
+                            output_path.join(format!("{}-key.pem", domain));
+                        let key_file_name_str: Option<&str> = key_file_name.to_str();
+                        if let Some(key_file_name_str) = key_file_name_str {
+                            LeafCert::save_key(&private_key, key_file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for key : {}", domain);
+                        }
                     } else {
-                        std::env::current_dir()?.join(output_path)
-                    };
-                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
-                    let file_name_str: Option<&str> = file_name.to_str();
-                    if let Some(file_name_str) = file_name_str {
-                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
-                    } else {
-                        eprintln!("Error: Error creating file for domain : {}", domain);
+                        let output_path: PathBuf = std::env::current_dir()?;
+                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                        let file_name_str: Option<&str> = file_name.to_str();
+                        if let Some(file_name_str) = file_name_str {
+                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for domain : {}", domain);
+                        }
+                        let key_file_name: PathBuf =
+                            output_path.join(format!("{}-key.pem", domain));
+                        let key_file_name_str: Option<&str> = key_file_name.to_str();
+                        if let Some(key_file_name_str) = key_file_name_str {
+                            LeafCert::save_key(&private_key, key_file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for key : {}", domain);
+                        }
                     }
                 } else {
-                    let output_path: PathBuf = std::env::current_dir()?;
-                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
-                    let file_name_str: Option<&str> = file_name.to_str();
-                    if let Some(file_name_str) = file_name_str {
-                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
-                    } else {
-                        eprintln!("Error: Error creating file for domain : {}", domain);
-                    }
+                    eprintln!(
+                        "Oops! We lost your private key for domain {}. Please try again!",
+                        domain
+                    )
                 }
             }
         }
@@ -267,7 +320,7 @@ pub fn generate(
             };
             let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
             let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-            let leaf_certificate: X509 = LeafCert::generate_certificate(
+            let (leaf_certificate, _private_key) = LeafCert::generate_certificate(
                 leaf_cert_object,
                 &created_cert,
                 &created_key,
@@ -309,38 +362,61 @@ pub fn generate(
                     state: state.clone(),
                 };
                 let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                let leaf_certificate: X509 = LeafCert::generate_certificate(
+                let (leaf_certificate, private_key) = LeafCert::generate_certificate(
                     leaf_cert_object,
                     &created_cert,
                     &created_key,
                     None,
                 )?;
-                if let Some(output) = &output {
-                    let output_path: &Path = Path::new(output);
-                    if !output_path.exists() {
-                        fs::create_dir_all(output_path)?;
-                    }
-                    let output_path: PathBuf = if output_path.is_absolute() {
-                        output_path.to_path_buf()
+                if let Some(private_key) = private_key {
+                    if let Some(output) = &output {
+                        let output_path: &Path = Path::new(output);
+                        if !output_path.exists() {
+                            fs::create_dir_all(output_path)?;
+                        }
+                        let output_path: PathBuf = if output_path.is_absolute() {
+                            output_path.to_path_buf()
+                        } else {
+                            std::env::current_dir()?.join(output_path)
+                        };
+                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                        let file_name_str: Option<&str> = file_name.to_str();
+                        if let Some(file_name_str) = file_name_str {
+                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for domain : {}", domain);
+                        }
+                        let key_file_name: PathBuf =
+                            output_path.join(format!("{}-key.pem", domain));
+                        let key_file_name_str: Option<&str> = key_file_name.to_str();
+                        if let Some(key_file_name_str) = key_file_name_str {
+                            LeafCert::save_key(&private_key, key_file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for key : {}", domain);
+                        }
                     } else {
-                        std::env::current_dir()?.join(output_path)
-                    };
-                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
-                    let file_name_str: Option<&str> = file_name.to_str();
-                    if let Some(file_name_str) = file_name_str {
-                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
-                    } else {
-                        eprintln!("Error: Error creating file for domain : {}", domain);
+                        let output_path: PathBuf = std::env::current_dir()?;
+                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                        let file_name_str: Option<&str> = file_name.to_str();
+                        if let Some(file_name_str) = file_name_str {
+                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for domain : {}", domain);
+                        }
+                        let key_file_name: PathBuf =
+                            output_path.join(format!("{}-key.pem", domain));
+                        let key_file_name_str: Option<&str> = key_file_name.to_str();
+                        if let Some(key_file_name_str) = key_file_name_str {
+                            LeafCert::save_key(&private_key, key_file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for key : {}", domain);
+                        }
                     }
                 } else {
-                    let output_path: PathBuf = std::env::current_dir()?;
-                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
-                    let file_name_str: Option<&str> = file_name.to_str();
-                    if let Some(file_name_str) = file_name_str {
-                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
-                    } else {
-                        eprintln!("Error: Error creating file for domain : {}", domain);
-                    }
+                    eprintln!(
+                        "Oops! We lost your private key for domain {}. Please try again!",
+                        domain
+                    )
                 }
             }
         }
