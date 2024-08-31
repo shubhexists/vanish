@@ -15,6 +15,8 @@ use openssl::{
         X509Builder, X509Name, X509NameRef, X509Req, X509,
     },
 };
+use std::io::Write;
+use std::{fs::File, io};
 
 pub struct LeafCert {
     _rsa_priv: Rsa<Private>,
@@ -222,5 +224,17 @@ impl LeafCert {
                 Err(err) => Err(X509Error::InitCARequestCertKeyPairError(err))?,
             }
         }
+    }
+
+    pub fn save_cert(cert: &X509, path: &str) -> X509Result<()> {
+        let mut file: File = File::create(path)
+            .map_err(|err: io::Error| X509Error::X509PEMFileCreationError(err))?;
+        file.write_all(
+            &cert
+                .to_pem()
+                .map_err(|err: ErrorStack| X509Error::PEMEncodingError(err))?,
+        )
+        .map_err(|err: io::Error| X509Error::X509WriteToFileError(err))?;
+        Ok(())
     }
 }

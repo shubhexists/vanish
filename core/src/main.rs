@@ -9,7 +9,7 @@ use std::env;
 #[derive(Parser)]
 #[clap(
     name = "A simple config tool to make locally trusted X.509 development certificates for your domains",
-    version = "0.0.1",
+    version = "0.1.1",
     author = "Shubham Singh"
 )]
 struct CLI {
@@ -27,9 +27,6 @@ enum Commands {
         #[arg(name = "no-ca", long)]
         noca: bool,
 
-        #[clap(short, long)]
-        debug: bool,
-
         #[clap(name = "csr", long)]
         csr: Option<String>,
 
@@ -38,9 +35,6 @@ enum Commands {
 
         #[arg(name = "keyfile", long)]
         keyfile: Option<String>,
-
-        #[arg(long = "org")]
-        organization: Option<String>,
 
         #[arg(short = 'c', long = "country")]
         country: Option<String>,
@@ -65,9 +59,6 @@ fn main() {
         if arg == "-cn" {
             *arg = "--cn".to_string();
         }
-        if arg == "-org" {
-            *arg = "--org".to_string();
-        }
     }
 
     let args: CLI = CLI::parse_from(args);
@@ -77,11 +68,9 @@ fn main() {
             Commands::Generate {
                 domains,
                 noca,
-                debug,
                 csr,
                 certfile,
                 keyfile,
-                organization,
                 country,
                 commonname,
                 state,
@@ -99,19 +88,9 @@ fn main() {
                     );
                     std::process::exit(1);
                 }
-                
+
                 let _ = generate(
-                    domains,
-                    noca,
-                    debug,
-                    csr,
-                    certfile,
-                    keyfile,
-                    organization,
-                    country,
-                    commonname,
-                    state,
-                    output,
+                    domains, noca, csr, certfile, keyfile, country, commonname, state, output,
                     request,
                 );
             }

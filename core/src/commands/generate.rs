@@ -17,11 +17,9 @@ use std::{
 pub fn generate(
     domains: Vec<String>,
     noca: bool,
-    debug: bool,
     csr: Option<String>,
     certfile: Option<String>,
     keyfile: Option<String>,
-    organization: Option<String>,
     country: Option<String>,
     commonname: Option<String>,
     state: Option<String>,
@@ -32,7 +30,7 @@ pub fn generate(
         for domain in &domains {
             let distinguished_name: DistinguishedName = DistinguishedName {
                 common_name: commonname.clone(),
-                organization: organization.clone(),
+                organization: "Vanish".to_string(),
                 country: country.clone(),
                 state: state.clone(),
             };
@@ -75,7 +73,7 @@ pub fn generate(
             if let Some(csr) = &csr {
                 let distinguished_name: DistinguishedName = DistinguishedName {
                     common_name: commonname.clone(),
-                    organization: organization.clone(),
+                    organization: "Vanish".to_string(),
                     country: country.clone(),
                     state: state.clone(),
                 };
@@ -87,20 +85,71 @@ pub fn generate(
                     &pkey,
                     Some(&csr_object),
                 )?;
-                // Save File
+                if let Some(output) = &output {
+                    let output_path: &Path = Path::new(output);
+                    if !output_path.exists() {
+                        fs::create_dir_all(output_path)?;
+                    }
+                    let output_path: PathBuf = if output_path.is_absolute() {
+                        output_path.to_path_buf()
+                    } else {
+                        std::env::current_dir()?.join(output_path)
+                    };
+                    let file_name: PathBuf = output_path.join("csr_cert.pem");
+                    let file_name_str: Option<&str> = file_name.to_str();
+                    if let Some(file_name_str) = file_name_str {
+                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                    } else {
+                        eprintln!("Error: Error creating file for generated Certificate :");
+                    }
+                } else {
+                    let output_path: PathBuf = std::env::current_dir()?;
+                    let file_name: PathBuf = output_path.join("csr_cert.pem");
+                    let file_name_str: Option<&str> = file_name.to_str();
+                    if let Some(file_name_str) = file_name_str {
+                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                    } else {
+                        eprintln!("Error: Error creating file for generated Certificate :");
+                    }
+                }
             } else {
                 for domain in &domains {
                     let distinguished_name: DistinguishedName = DistinguishedName {
-                        // replace to domain_name
-                        common_name: commonname.clone(),
-                        organization: organization.clone(),
+                        common_name: Some(domain.to_string()),
+                        organization: "Vanish".to_string(),
                         country: country.clone(),
                         state: state.clone(),
                     };
                     let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
                     let leaf_certificate: X509 =
                         LeafCert::generate_certificate(leaf_cert_object, &cert, &pkey, None)?;
-                    // Save file
+                    if let Some(output) = &output {
+                        let output_path: &Path = Path::new(output);
+                        if !output_path.exists() {
+                            fs::create_dir_all(output_path)?;
+                        }
+                        let output_path: PathBuf = if output_path.is_absolute() {
+                            output_path.to_path_buf()
+                        } else {
+                            std::env::current_dir()?.join(output_path)
+                        };
+                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                        let file_name_str: Option<&str> = file_name.to_str();
+                        if let Some(file_name_str) = file_name_str {
+                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for domain : {}", domain);
+                        }
+                    } else {
+                        let output_path: PathBuf = std::env::current_dir()?;
+                        let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                        let file_name_str: Option<&str> = file_name.to_str();
+                        if let Some(file_name_str) = file_name_str {
+                            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                        } else {
+                            eprintln!("Error: Error creating file for domain : {}", domain);
+                        }
+                    }
                 }
             }
             return Ok(());
@@ -115,7 +164,7 @@ pub fn generate(
         if let Some(csr) = &csr {
             let distinguished_name: DistinguishedName = DistinguishedName {
                 common_name: commonname.clone(),
-                organization: organization.clone(),
+                organization: "Vanish".to_string(),
                 country: country.clone(),
                 state: state.clone(),
             };
@@ -127,20 +176,71 @@ pub fn generate(
                 &d_pkey,
                 Some(&csr_object),
             )?;
-            // Save File
+            if let Some(output) = &output {
+                let output_path: &Path = Path::new(output);
+                if !output_path.exists() {
+                    fs::create_dir_all(output_path)?;
+                }
+                let output_path: PathBuf = if output_path.is_absolute() {
+                    output_path.to_path_buf()
+                } else {
+                    std::env::current_dir()?.join(output_path)
+                };
+                let file_name: PathBuf = output_path.join("csr_cert.pem");
+                let file_name_str: Option<&str> = file_name.to_str();
+                if let Some(file_name_str) = file_name_str {
+                    LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                } else {
+                    eprintln!("Error: Error creating file for generated Certificate :");
+                }
+            } else {
+                let output_path: PathBuf = std::env::current_dir()?;
+                let file_name: PathBuf = output_path.join("csr_cert.pem");
+                let file_name_str: Option<&str> = file_name.to_str();
+                if let Some(file_name_str) = file_name_str {
+                    LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                } else {
+                    eprintln!("Error: Error creating file for generated Certificate :");
+                }
+            }
         } else {
             for domain in &domains {
                 let distinguished_name: DistinguishedName = DistinguishedName {
-                    // replace to domain_name
-                    common_name: commonname.clone(),
-                    organization: organization.clone(),
+                    common_name: Some(domain.to_string()),
+                    organization: "Vanish".to_string(),
                     country: country.clone(),
                     state: state.clone(),
                 };
                 let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
                 let leaf_certificate: X509 =
                     LeafCert::generate_certificate(leaf_cert_object, &d_cert, &d_pkey, None)?;
-                // Save file
+                if let Some(output) = &output {
+                    let output_path: &Path = Path::new(output);
+                    if !output_path.exists() {
+                        fs::create_dir_all(output_path)?;
+                    }
+                    let output_path: PathBuf = if output_path.is_absolute() {
+                        output_path.to_path_buf()
+                    } else {
+                        std::env::current_dir()?.join(output_path)
+                    };
+                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                    let file_name_str: Option<&str> = file_name.to_str();
+                    if let Some(file_name_str) = file_name_str {
+                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                    } else {
+                        eprintln!("Error: Error creating file for domain : {}", domain);
+                    }
+                } else {
+                    let output_path: PathBuf = std::env::current_dir()?;
+                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                    let file_name_str: Option<&str> = file_name.to_str();
+                    if let Some(file_name_str) = file_name_str {
+                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                    } else {
+                        eprintln!("Error: Error creating file for domain : {}", domain);
+                    }
+                }
             }
         }
     } else {
@@ -151,7 +251,7 @@ pub fn generate(
         // Replace with correct variables
         let distinguished_name: DistinguishedName = DistinguishedName {
             common_name: commonname.clone(),
-            organization: organization.clone(),
+            organization: "Vanish".to_string(),
             country: country.clone(),
             state: state.clone(),
         };
@@ -161,7 +261,7 @@ pub fn generate(
         if let Some(csr) = &csr {
             let distinguished_name: DistinguishedName = DistinguishedName {
                 common_name: commonname.clone(),
-                organization: organization.clone(),
+                organization: "Vanish".to_string(),
                 country: country.clone(),
                 state: state.clone(),
             };
@@ -173,13 +273,38 @@ pub fn generate(
                 &created_key,
                 Some(&csr_object),
             )?;
-            // Save File
+            if let Some(output) = &output {
+                let output_path: &Path = Path::new(output);
+                if !output_path.exists() {
+                    fs::create_dir_all(output_path)?;
+                }
+                let output_path: PathBuf = if output_path.is_absolute() {
+                    output_path.to_path_buf()
+                } else {
+                    std::env::current_dir()?.join(output_path)
+                };
+                let file_name: PathBuf = output_path.join("csr_cert.pem");
+                let file_name_str: Option<&str> = file_name.to_str();
+                if let Some(file_name_str) = file_name_str {
+                    LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                } else {
+                    eprintln!("Error: Error creating file for generated Certificate :");
+                }
+            } else {
+                let output_path: PathBuf = std::env::current_dir()?;
+                let file_name: PathBuf = output_path.join("csr_cert.pem");
+                let file_name_str: Option<&str> = file_name.to_str();
+                if let Some(file_name_str) = file_name_str {
+                    LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                } else {
+                    eprintln!("Error: Error creating file for generated Certificate :");
+                }
+            }
         } else {
             for domain in &domains {
                 let distinguished_name: DistinguishedName = DistinguishedName {
-                    // replace to domain_name
-                    common_name: commonname.clone(),
-                    organization: organization.clone(),
+                    common_name: Some(domain.to_string()),
+                    organization: "Vanish".to_string(),
                     country: country.clone(),
                     state: state.clone(),
                 };
@@ -190,7 +315,33 @@ pub fn generate(
                     &created_key,
                     None,
                 )?;
-                // Save file
+                if let Some(output) = &output {
+                    let output_path: &Path = Path::new(output);
+                    if !output_path.exists() {
+                        fs::create_dir_all(output_path)?;
+                    }
+                    let output_path: PathBuf = if output_path.is_absolute() {
+                        output_path.to_path_buf()
+                    } else {
+                        std::env::current_dir()?.join(output_path)
+                    };
+                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                    let file_name_str: Option<&str> = file_name.to_str();
+                    if let Some(file_name_str) = file_name_str {
+                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                    } else {
+                        eprintln!("Error: Error creating file for domain : {}", domain);
+                    }
+                } else {
+                    let output_path: PathBuf = std::env::current_dir()?;
+                    let file_name: PathBuf = output_path.join(format!("{}.pem", domain));
+                    let file_name_str: Option<&str> = file_name.to_str();
+                    if let Some(file_name_str) = file_name_str {
+                        LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+                    } else {
+                        eprintln!("Error: Error creating file for domain : {}", domain);
+                    }
+                }
             }
         }
     }

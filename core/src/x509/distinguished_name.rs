@@ -7,7 +7,7 @@ use openssl::{
 #[derive(Debug)]
 pub struct DistinguishedName {
     pub common_name: Option<String>,
-    pub organization: Option<String>,
+    pub organization: String,
     pub country: Option<String>,
     pub state: Option<String>,
 }
@@ -18,18 +18,18 @@ impl DistinguishedName {
             .map_err(|err: ErrorStack| X509Error::X509NameBuilderInitializeError(err))?;
         if let Some(common_name) = self.common_name {
             x509_name
-                .append_entry_by_text("C", &common_name)
+                .append_entry_by_text("CN", &common_name)
                 .map_err(|err: ErrorStack| {
-                    X509Error::X509NameBuilderEntryError(err, "C".to_string(), common_name)
+                    X509Error::X509NameBuilderEntryError(err, "CN".to_string(), common_name)
                 })?;
         }
-        if let Some(organization) = self.organization {
-            x509_name
-                .append_entry_by_text("C", &organization)
-                .map_err(|err: ErrorStack| {
-                    X509Error::X509NameBuilderEntryError(err, "C".to_string(), organization)
-                })?;
-        }
+
+        x509_name
+            .append_entry_by_text("O", &self.organization)
+            .map_err(|err: ErrorStack| {
+                X509Error::X509NameBuilderEntryError(err, "O".to_string(), self.organization)
+            })?;
+
         if let Some(country) = self.country {
             x509_name
                 .append_entry_by_text("C", &country)
