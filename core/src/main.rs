@@ -99,8 +99,8 @@ fn main() {
                     );
                     std::process::exit(1);
                 }
-
-                generate(
+                
+                let _ = generate(
                     domains,
                     noca,
                     debug,
@@ -113,7 +113,7 @@ fn main() {
                     state,
                     output,
                     request,
-                )
+                );
             }
         }
     }

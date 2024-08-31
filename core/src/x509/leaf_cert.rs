@@ -51,7 +51,7 @@ impl LeafCert {
         }
     }
 
-    fn generate_certificate(
+    pub fn generate_certificate(
         self,
         cert_file: &X509,
         key_file: &PKey<Private>,

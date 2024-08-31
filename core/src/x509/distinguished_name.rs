@@ -6,11 +6,10 @@ use openssl::{
 
 #[derive(Debug)]
 pub struct DistinguishedName {
-    common_name: Option<String>,
-    organization: Option<String>,
-    country: Option<String>,
-    state: Option<String>,
-    city: Option<String>,
+    pub common_name: Option<String>,
+    pub organization: Option<String>,
+    pub country: Option<String>,
+    pub state: Option<String>,
 }
 
 impl DistinguishedName {
@@ -43,13 +42,6 @@ impl DistinguishedName {
                 .append_entry_by_text("ST", &state)
                 .map_err(|err: ErrorStack| {
                     X509Error::X509NameBuilderEntryError(err, "ST".to_string(), state)
-                })?;
-        }
-        if let Some(city) = self.city {
-            x509_name
-                .append_entry_by_text("L", &city)
-                .map_err(|err: ErrorStack| {
-                    X509Error::X509NameBuilderEntryError(err, "L".to_string(), city)
                 })?;
         }
         let x509_name: X509Name = x509_name.build();
