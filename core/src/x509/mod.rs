@@ -19,9 +19,11 @@ enum X509Version {
     V2 = 1,
     V3 = 2,
 }
-// later
+
 pub trait Certificate {
+    type Output;
     fn new(distinguished_name: DistinguishedName) -> X509Result<Self>
     where
         Self: Sized;
+    fn generate_certificate(self) -> X509Result<Self::Output>;
 }

@@ -19,6 +19,7 @@ pub struct CAReq {
 }
 
 impl Certificate for CAReq {
+    type Output = X509Req;
     fn new(distinguished_name: DistinguishedName) -> X509Result<Self> {
         match generate_cert_key_pair() {
             Ok((rsa_priv, pkey)) => Ok(CAReq {
@@ -29,12 +30,10 @@ impl Certificate for CAReq {
             Err(err) => Err(X509Error::InitCARequestCertKeyPairError(err)),
         }
     }
-}
 
-impl CAReq {
-    pub fn generate_certificate_sign_request(ca_req: Self) -> X509Result<X509Req> {
+    fn generate_certificate(self) -> X509Result<Self::Output> {
         let distinguished_name: X509Name =
-            DistinguishedName::distinguished_name_builder(ca_req.distinguished_name)?;
+            DistinguishedName::distinguished_name_builder(self.distinguished_name)?;
         let mut cert_req: X509ReqBuilder = X509Req::builder()
             .map_err(|err: ErrorStack| X509Error::X509CertificateBuilderInitializeError(err))?;
         cert_req
@@ -42,19 +41,19 @@ impl CAReq {
             .map_err(|err: ErrorStack| {
                 X509Error::X509CertificateBuilerEntryError(err, "Subject Name".to_string())
             })?;
+        cert_req.set_pubkey(&self.pkey).map_err(|err: ErrorStack| {
+            X509Error::X509CertificateBuilerEntryError(err, "Public Key".to_string())
+        })?;
         cert_req
-            .set_pubkey(&ca_req.pkey)
-            .map_err(|err: ErrorStack| {
-                X509Error::X509CertificateBuilerEntryError(err, "Public Key".to_string())
-            })?;
-        cert_req
-            .sign(&ca_req.pkey, MessageDigest::sha256())
+            .sign(&self.pkey, MessageDigest::sha256())
             .map_err(|err: ErrorStack| {
                 X509Error::X509CertificateBuilerEntryError(err, "Sign".to_string())
             })?;
         Ok(cert_req.build())
     }
+}
 
+impl CAReq {
     pub fn save_certificate_to_file(certificate: &X509Req, file_name: &str) -> X509Result<()> {
         let certificate_pem: Vec<u8> = certificate
             .to_pem()

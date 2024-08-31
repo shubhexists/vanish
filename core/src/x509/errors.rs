@@ -18,6 +18,8 @@ pub enum X509Error {
     InitSerialNumberGenerationError(SerialNumberError),
     GenerateNotBeforeError(ErrorStack),
     GenerateNotAfterError(ErrorStack),
+    BasicConstraintsInitializeError(ErrorStack),
+    ErrorGettingPublicKeyFromCSR(ErrorStack),
 }
 
 impl fmt::Display for X509Error {
@@ -67,6 +69,16 @@ impl fmt::Display for X509Error {
             }
             Self::GenerateNotAfterError(err) => {
                 write!(f, "Error Generating Not After Time: {}", err)
+            }
+            Self::BasicConstraintsInitializeError(err) => {
+                write!(
+                    f,
+                    "Error Initializing Basic Constrainsts for Certificate: {}",
+                    err
+                )
+            }
+            Self::ErrorGettingPublicKeyFromCSR(err) => {
+                write!(f, "Error getting Public Key From CSR: {}", err)
             }
         }
     }

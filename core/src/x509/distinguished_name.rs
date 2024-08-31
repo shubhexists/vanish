@@ -6,50 +6,46 @@ use openssl::{
 
 #[derive(Debug)]
 pub struct DistinguishedName {
-    common_name: String,
-    organization: String,
+    common_name: Option<String>,
+    organization: Option<String>,
     country: Option<String>,
     state: Option<String>,
     city: Option<String>,
 }
 
 impl DistinguishedName {
-    pub fn distinguished_name_builder(distinguished_name: Self) -> X509Result<X509Name> {
+    pub fn distinguished_name_builder(self) -> X509Result<X509Name> {
         let mut x509_name: X509NameBuilder = X509NameBuilder::new()
             .map_err(|err: ErrorStack| X509Error::X509NameBuilderInitializeError(err))?;
-        x509_name
-            .append_entry_by_text("CN", &distinguished_name.common_name)
-            .map_err(|err: ErrorStack| {
-                X509Error::X509NameBuilderEntryError(
-                    err,
-                    "CN".to_string(),
-                    distinguished_name.common_name.clone(),
-                )
-            })?;
-        x509_name
-            .append_entry_by_text("O", &distinguished_name.common_name)
-            .map_err(|err: ErrorStack| {
-                X509Error::X509NameBuilderEntryError(
-                    err,
-                    "O".to_string(),
-                    distinguished_name.organization,
-                )
-            })?;
-        if let Some(country) = distinguished_name.country {
+        if let Some(common_name) = self.common_name {
+            x509_name
+                .append_entry_by_text("C", &common_name)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509NameBuilderEntryError(err, "C".to_string(), common_name)
+                })?;
+        }
+        if let Some(organization) = self.organization {
+            x509_name
+                .append_entry_by_text("C", &organization)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509NameBuilderEntryError(err, "C".to_string(), organization)
+                })?;
+        }
+        if let Some(country) = self.country {
             x509_name
                 .append_entry_by_text("C", &country)
                 .map_err(|err: ErrorStack| {
                     X509Error::X509NameBuilderEntryError(err, "C".to_string(), country)
                 })?;
         }
-        if let Some(state) = distinguished_name.state {
+        if let Some(state) = self.state {
             x509_name
                 .append_entry_by_text("ST", &state)
                 .map_err(|err: ErrorStack| {
                     X509Error::X509NameBuilderEntryError(err, "ST".to_string(), state)
                 })?;
         }
-        if let Some(city) = distinguished_name.city {
+        if let Some(city) = self.city {
             x509_name
                 .append_entry_by_text("L", &city)
                 .map_err(|err: ErrorStack| {

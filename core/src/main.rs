@@ -32,10 +32,10 @@ enum Commands {
         #[clap(name = "csr", long)]
         csr: Option<String>,
 
-        #[arg(name = "cert-file", long)]
+        #[arg(name = "certfile", long)]
         certfile: Option<String>,
 
-        #[arg(name = "key-file", long)]
+        #[arg(name = "keyfile", long)]
         keyfile: Option<String>,
 
         #[arg(long = "org")]
@@ -83,13 +83,13 @@ fn main() {
                 state,
                 output,
             } => {
-                if noca
-                    && (organization.is_some()
-                        || country.is_some()
-                        || commonname.is_some()
-                        || state.is_some())
-                {
-                    eprintln!("Error: The `--no-ca` flag cannot be used with `--organization`, `--country`, `--cn`, or `--state`.");
+                if certfile.is_some() != keyfile.is_some() {
+                    if certfile.is_some() {
+                        eprintln!("Error: Please provide corresponding `--keyfile` to the provided Certificate.");
+                    }
+                    eprintln!(
+                        "Error: Please provide corresponding `--certfile` to the provided KeyFile."
+                    );
                     std::process::exit(1);
                 }
 

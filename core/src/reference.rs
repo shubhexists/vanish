@@ -239,7 +239,7 @@ fn generate_certificate_from_CSR_Req(
     let subject_name = csr.subject_name();
 
     // Create a new certificate builder
-    let mut builder = X509Builder::new()?;
+    let mut builder: X509Builder = X509Builder::new()?;
     builder.set_version(2)?;
 
     builder.set_subject_name(subject_name)?;
