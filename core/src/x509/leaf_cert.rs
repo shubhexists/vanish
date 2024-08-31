@@ -12,7 +12,7 @@ use openssl::{
     rsa::Rsa,
     x509::{
         extension::{ExtendedKeyUsage, KeyUsage},
-        X509Builder, X509NameRef, X509Req, X509,
+        X509Builder, X509Name, X509NameRef, X509Req, X509,
     },
 };
 
@@ -51,101 +51,174 @@ impl LeafCert {
         }
     }
 
-    pub fn generate_certificate(
+    fn generate_certificate(
         self,
-        no_ca: bool,
-        cert_key_files: Option<(&X509, &PKey<Private>)>,
+        cert_file: &X509,
+        key_file: &PKey<Private>,
         csr: Option<&X509Req>,
     ) -> X509Result<X509> {
-        if let Some((cert_file, key_file)) = cert_key_files {
-            if let Some(csr) = csr {
-                let pkey: PKey<Public> = csr
-                    .public_key()
-                    .map_err(|err: ErrorStack| X509Error::ErrorGettingPublicKeyFromCSR(err))?;
-                let subject_name: &X509NameRef = csr.subject_name();
-                let mut cert_builder: X509Builder =
-                    X509Builder::new().map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilderInitializeError(err)
-                    })?;
-                cert_builder
-                    .set_version(self.version as i32)
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "Version".to_string())
-                    })?;
-                cert_builder
-                    .set_subject_name(subject_name)
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "Subject Name".to_string())
-                    })?;
-                cert_builder
-                    .set_issuer_name(cert_file.subject_name())
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "Issuer Name".to_string())
-                    })?;
-                cert_builder.set_pubkey(&pkey).map_err(|err: ErrorStack| {
-                    X509Error::X509CertificateBuilerEntryError(err, "Public Key".to_string())
+        if let Some(csr) = csr {
+            let pkey: PKey<Public> = csr
+                .public_key()
+                .map_err(|err: ErrorStack| X509Error::ErrorGettingPublicKeyFromCSR(err))?;
+            let subject_name: &X509NameRef = csr.subject_name();
+            let mut cert_builder: X509Builder = X509Builder::new()
+                .map_err(|err: ErrorStack| X509Error::X509CertificateBuilderInitializeError(err))?;
+            cert_builder
+                .set_version(self.version as i32)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "Version".to_string())
                 })?;
-                cert_builder
-                    .set_not_before(&self.not_before)
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "Not Before".to_string())
-                    })?;
-                cert_builder
-                    .set_not_after(&self.not_after)
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "Not After".to_string())
-                    })?;
-                cert_builder
-                    .set_serial_number(&self.serial_number)
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "Serial Number".to_string())
-                    })?;
-                cert_builder
-                    .append_extension(
-                        KeyUsage::new()
-                            .digital_signature()
-                            .key_encipherment()
-                            .build()
-                            .unwrap(),
-                    )
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "KeyUsage".to_string())
-                    })?;
+            cert_builder
+                .set_subject_name(subject_name)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "Subject Name".to_string())
+                })?;
+            cert_builder
+                .set_issuer_name(cert_file.subject_name())
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "Issuer Name".to_string())
+                })?;
+            cert_builder.set_pubkey(&pkey).map_err(|err: ErrorStack| {
+                X509Error::X509CertificateBuilerEntryError(err, "Public Key".to_string())
+            })?;
+            cert_builder
+                .set_not_before(&self.not_before)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "Not Before".to_string())
+                })?;
+            cert_builder
+                .set_not_after(&self.not_after)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "Not After".to_string())
+                })?;
+            cert_builder
+                .set_serial_number(&self.serial_number)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "Serial Number".to_string())
+                })?;
+            cert_builder
+                .append_extension(
+                    KeyUsage::new()
+                        .digital_signature()
+                        .key_encipherment()
+                        .build()
+                        .map_err(|err: ErrorStack| X509Error::KeyUsageBuildError(err))?,
+                )
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "KeyUsage".to_string())
+                })?;
 
-                cert_builder
-                    .append_extension(
-                        ExtendedKeyUsage::new()
-                            .server_auth()
-                            .client_auth()
-                            .build()
-                            .unwrap(),
-                    )
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(
-                            err,
-                            "ExtendedKeyUsage".to_string(),
+            cert_builder
+                .append_extension(
+                    ExtendedKeyUsage::new()
+                        .server_auth()
+                        .client_auth()
+                        .build()
+                        .map_err(|err: ErrorStack| X509Error::ExtendedKeyUsageBuildError(err))?,
+                )
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "ExtendedKeyUsage".to_string())
+                })?;
+
+            cert_builder
+                .sign(key_file, MessageDigest::sha256())
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "Sign".to_string())
+                })?;
+
+            return Ok(cert_builder.build());
+        } else {
+            match generate_cert_key_pair() {
+                Ok((_rsa_priv, pkey)) => {
+                    let distinguished_name: X509Name =
+                        DistinguishedName::distinguished_name_builder(self.distinguished_name)?;
+                    let mut cert_builder: X509Builder =
+                        X509Builder::new().map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilderInitializeError(err)
+                        })?;
+                    cert_builder
+                        .set_version(self.version as i32)
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(err, "Version".to_string())
+                        })?;
+                    cert_builder.set_subject_name(&distinguished_name).map_err(
+                        |err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(
+                                err,
+                                "Subject Name".to_string(),
+                            )
+                        },
+                    )?;
+                    cert_builder
+                        .set_issuer_name(cert_file.subject_name())
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(
+                                err,
+                                "Issuer Name".to_string(),
+                            )
+                        })?;
+                    cert_builder.set_pubkey(&pkey).map_err(|err: ErrorStack| {
+                        X509Error::X509CertificateBuilerEntryError(err, "Public Key".to_string())
+                    })?;
+                    cert_builder
+                        .set_not_before(&self.not_before)
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(
+                                err,
+                                "Not Before".to_string(),
+                            )
+                        })?;
+                    cert_builder
+                        .set_not_after(&self.not_after)
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(err, "Not After".to_string())
+                        })?;
+                    cert_builder
+                        .set_serial_number(&self.serial_number)
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(
+                                err,
+                                "Serial Number".to_string(),
+                            )
+                        })?;
+                    cert_builder
+                        .append_extension(
+                            KeyUsage::new()
+                                .digital_signature()
+                                .key_encipherment()
+                                .build()
+                                .map_err(|err: ErrorStack| X509Error::KeyUsageBuildError(err))?,
                         )
-                    })?;
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(err, "KeyUsage".to_string())
+                        })?;
 
-                cert_builder
-                    .sign(key_file, MessageDigest::sha256())
-                    .map_err(|err: ErrorStack| {
-                        X509Error::X509CertificateBuilerEntryError(err, "Sign".to_string())
-                    })?;
+                    cert_builder
+                        .append_extension(
+                            ExtendedKeyUsage::new()
+                                .server_auth()
+                                .client_auth()
+                                .build()
+                                .map_err(|err: ErrorStack| X509Error::ExtendedKeyUsageBuildError(err))?,
+                        )
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(
+                                err,
+                                "ExtendedKeyUsage".to_string(),
+                            )
+                        })?;
 
-                return Ok(cert_builder.build());
-            } else {
-                // TODO: Implement certificate generation logic when CSR is not provided
-                todo!();
+                    cert_builder
+                        .sign(key_file, MessageDigest::sha256())
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(err, "Sign".to_string())
+                        })?;
+
+                    return Ok(cert_builder.build());
+                }
+                Err(err) => Err(X509Error::InitCARequestCertKeyPairError(err))?,
             }
         }
-
-        if no_ca {
-            eprintln!("No Valid CA Certificate found and you provided `--no-ca` to prevent generating CA automatically");
-            std::process::exit(1);
-        }
-
-        // TODO: Implement certificate generation logic when no cert_key_files are provided
-        todo!()
     }
 }

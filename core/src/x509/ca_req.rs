@@ -13,7 +13,7 @@ use std::{
 };
 
 pub struct CAReq {
-    rsa_priv: Rsa<Private>,
+    _rsa_priv: Rsa<Private>,
     pkey: PKey<Private>,
     distinguished_name: DistinguishedName,
 }
@@ -23,7 +23,7 @@ impl Certificate for CAReq {
     fn new(distinguished_name: DistinguishedName) -> X509Result<Self> {
         match generate_cert_key_pair() {
             Ok((rsa_priv, pkey)) => Ok(CAReq {
-                rsa_priv,
+                _rsa_priv: rsa_priv,
                 pkey,
                 distinguished_name,
             }),

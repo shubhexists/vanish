@@ -20,6 +20,8 @@ pub enum X509Error {
     GenerateNotAfterError(ErrorStack),
     BasicConstraintsInitializeError(ErrorStack),
     ErrorGettingPublicKeyFromCSR(ErrorStack),
+    KeyUsageBuildError(ErrorStack),
+    ExtendedKeyUsageBuildError(ErrorStack),
 }
 
 impl fmt::Display for X509Error {
@@ -79,6 +81,16 @@ impl fmt::Display for X509Error {
             }
             Self::ErrorGettingPublicKeyFromCSR(err) => {
                 write!(f, "Error getting Public Key From CSR: {}", err)
+            }
+            Self::KeyUsageBuildError(err) => {
+                write!(f, "Error building Key Usage for Certificate: {}", err)
+            }
+            Self::ExtendedKeyUsageBuildError(err) => {
+                write!(
+                    f,
+                    "Error building Extended Key Usage for Certificate: {}",
+                    err
+                )
             }
         }
     }
