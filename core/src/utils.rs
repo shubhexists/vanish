@@ -61,8 +61,8 @@ pub fn get_certificates_from_data_dir() -> Option<(X509, PKey<Private>)> {
 
         match CACert::load_ca_cert(ca_cert_file_str, ca_key_file_str) {
             Ok((cert, pkey)) => Some((cert, pkey)),
-            Err(err) => {
-                eprintln!("Failed to load certificates: {}", err);
+            Err(_err) => {
+                eprintln!("Warning: Generating new certificates");
                 None
             }
         }

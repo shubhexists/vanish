@@ -82,6 +82,7 @@ fn main() {
                         eprintln!(
                             "Error: Please provide corresponding `--keyfile` to the certificate provided"
                         );
+                        std::process::exit(1);
                     }
                     eprintln!(
                         "Error: Please provide corresponding `--certfile` to the keyfile provided"
