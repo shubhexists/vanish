@@ -5,7 +5,9 @@
 
 Fast and simple tool to generate development certificates locally, built in Rust. 
 
-Vanish follows the <b>X.509 Standards</b> as mentioned in [RFC 3280](https://www.ietf.org/rfc/rfc3280.txt) ( April 2002 ) to match the PKI Standards. 
+Vanish follows the <b>X.509 Standards</b> as mentioned in [RFC 3280](https://www.ietf.org/rfc/rfc3280.txt) ( April 2002 ) to match the PKI Standards.
+
+Vanish also follow the [XDG Base Direcctory Specification](https://specifications.freedesktop.org/basedir-spec/latest/) to store the CA Keys.
 
 ```sh
 // To generate certificates
