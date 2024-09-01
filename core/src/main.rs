@@ -10,7 +10,7 @@ use std::env;
 #[derive(Parser)]
 #[clap(
     name = "A simple config tool to make locally trusted X.509 development certificates for your domains",
-    version = "0.1.1",
+    version = "0.1.2",
     author = "Shubham Singh"
 )]
 struct CLI {
