@@ -69,6 +69,13 @@ pub fn generate(
                 } else {
                     eprintln!("Error: Error creating file for domain : {}", domain);
                 }
+                let key_file_name: PathBuf = output_path.join(format!("csr-{}-key.pem", domain));
+                let key_file_name_str: Option<&str> = key_file_name.to_str();
+                if let Some(key_file_name_str) = key_file_name_str {
+                    CAReq::save_key(&private_key, key_file_name_str)?;
+                } else {
+                    eprintln!("Error: Error creating file for key : {}", domain);
+                }
             }
         }
         return Ok(());
