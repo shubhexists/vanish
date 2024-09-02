@@ -1,4 +1,5 @@
 use crate::{
+    trust_stores::{CAValue, NSSValue},
     utils::{get_certificates_from_data_dir, save_generated_cert_key_files},
     x509::{
         ca_cert::CACert, ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert,
@@ -25,6 +26,7 @@ pub fn generate(
     state: Option<String>,
     output: Option<String>,
     request: bool,
+    install: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if request {
         for domain in &domains {
@@ -189,6 +191,14 @@ pub fn generate(
                     }
                 }
             }
+            if install {
+                let trust_store_object: CAValue = CAValue {
+                    certificate: cert.clone(),
+                };
+                CAValue::install_certificate(&trust_store_object)?;
+                let nss_store_object: NSSValue = NSSValue { certificate: cert };
+                NSSValue::install_certificate(&nss_store_object)?;
+            }
             return Ok(());
         } else {
             eprintln!("Corresponding KeyFile Not Found");
@@ -302,6 +312,17 @@ pub fn generate(
                     )
                 }
             }
+        }
+
+        if install {
+            let trust_store_object: CAValue = CAValue {
+                certificate: d_cert.clone(),
+            };
+            CAValue::install_certificate(&trust_store_object)?;
+            let nss_store_object: NSSValue = NSSValue {
+                certificate: d_cert,
+            };
+            NSSValue::install_certificate(&nss_store_object)?;
         }
     } else {
         if noca {

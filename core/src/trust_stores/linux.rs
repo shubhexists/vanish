@@ -1,13 +1,15 @@
 use openssl::error::ErrorStack;
 use openssl::x509::X509;
+use std::fs;
 use std::fs::File;
 use std::io;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::{fmt, fs};
+
+use super::errors::TrustStoreError;
 
 pub struct CAValue {
-    certificate: X509,
+    pub certificate: X509,
 }
 
 impl CAValue {
@@ -33,7 +35,8 @@ impl CAValue {
         match store {
             Some(store) => {
                 let path: String = store.get_path();
-                let pem_path: PathBuf = Path::new(&path).join("vanish-root.pem");
+                println!("Adding file to trust store: {}", path);
+                let pem_path: PathBuf = Path::new(&path).join("vanish-root.crt");
 
                 if let Err(err) = fs::create_dir_all(&path) {
                     eprintln!("Failed to create directory: {}. Error: {}", path, err);
@@ -53,7 +56,7 @@ impl CAValue {
         Ok(())
     }
 
-    pub fn save_cert(cert: &X509, path: &str) -> Result<(), TrustStoreError> {
+    fn save_cert(cert: &X509, path: &str) -> Result<(), TrustStoreError> {
         let mut file: File = File::create(path)
             .map_err(|err: io::Error| TrustStoreError::PEMFileCreationError(err))?;
         file.write_all(
@@ -80,29 +83,6 @@ impl PossibleStores {
             PossibleStores::Debian => "/usr/local/share/ca-certificates/".to_string(),
             PossibleStores::SuSE => "/etc/ca-certificates/trust-source/anchors/".to_string(),
             PossibleStores::Other => "/usr/share/pki/trust/anchors/".to_string(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum TrustStoreError {
-    PEMFileCreationError(io::Error),
-    PEMEncodingError(ErrorStack),
-    WriteToFileError(io::Error),
-}
-
-impl fmt::Display for TrustStoreError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::PEMEncodingError(err) => {
-                write!(f, "")
-            }
-            Self::PEMFileCreationError(err) => {
-                write!(f, "")
-            }
-            Self::WriteToFileError(err) => {
-                write!(f, "")
-            }
         }
     }
 }

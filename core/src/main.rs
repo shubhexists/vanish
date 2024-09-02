@@ -51,6 +51,9 @@ enum Commands {
 
         #[arg(long = "req-only")]
         request: bool,
+
+        #[arg(short = 'i', long = "install")]
+        install: bool,
     },
 }
 
@@ -77,6 +80,7 @@ fn main() {
                 state,
                 output,
                 request,
+                install,
             } => {
                 if certfile.is_some() != keyfile.is_some() {
                     if certfile.is_some() {
@@ -96,9 +100,14 @@ fn main() {
                     std::process::exit(1);
                 }
 
+                if request && install {
+                    eprint!("Error: `--req-only` and `csr` are incompatible. You can't generate requests from a request certificate.");
+                    std::process::exit(1);
+                }
+
                 let _ = generate(
                     domains, noca, csr, certfile, keyfile, country, commonname, state, output,
-                    request,
+                    request, install,
                 );
             }
         }
