@@ -26,11 +26,20 @@ pub enum X509Error {
     ExtendedKeyUsageBuildError(ErrorStack),
     ErrorReadingCertFile(io::Error, String),
     ErrorConvertingFileToData(ErrorStack, String),
+    SANCouldNotBuildError(ErrorStack),
+    CertificateStackInitializationError(ErrorStack),
+    CertificateStackPushError(ErrorStack),
 }
 
 impl fmt::Display for X509Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::CertificateStackPushError(err) => {
+                write!(f, "Failed to push item to stack: {}", err)
+            }
+            Self::CertificateStackInitializationError(err) => {
+                write!(f, "Failed to initialize extension stack: {}", err)
+            }
             Self::InitCARequestCertKeyPairError(err) => {
                 write!(
                     f,
@@ -111,6 +120,9 @@ impl fmt::Display for X509Error {
                     "Failed to encode generated certificate to PEM Format: {}",
                     err
                 )
+            }
+            Self::SANCouldNotBuildError(err) => {
+                write!(f, "Error building Subject Alternative Name : {}", err)
             }
         }
     }

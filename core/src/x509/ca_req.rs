@@ -5,7 +5,8 @@ use openssl::{
     hash::MessageDigest,
     pkey::{PKey, Private},
     rsa::Rsa,
-    x509::{X509Name, X509Req, X509ReqBuilder},
+    stack::Stack,
+    x509::{extension::SubjectAlternativeName, X509Extension, X509Name, X509Req, X509ReqBuilder},
 };
 use std::io::Read;
 use std::{
@@ -45,6 +46,26 @@ impl Certificate for CAReq {
         cert_req.set_pubkey(&self.pkey).map_err(|err: ErrorStack| {
             X509Error::X509CertificateBuilerEntryError(err, "Public Key".to_string())
         })?;
+        let mut san: SubjectAlternativeName = SubjectAlternativeName::new();
+        // For now as we test on localhost
+        san.dns("localhost");
+        let san: X509Extension = san
+            .build(&cert_req.x509v3_context(None))
+            .map_err(|err: ErrorStack| X509Error::SANCouldNotBuildError(err))?;
+        let mut extension_stack: Stack<X509Extension> = Stack::<X509Extension>::new()
+            .map_err(|err: ErrorStack| X509Error::CertificateStackInitializationError(err))?;
+        extension_stack
+            .push(san)
+            .map_err(|err: ErrorStack| X509Error::CertificateStackPushError(err))?;
+        cert_req
+            .add_extensions(&extension_stack)
+            .map_err(|err: ErrorStack| {
+                X509Error::X509CertificateBuilerEntryError(
+                    err,
+                    "Subject Alternative Name".to_string(),
+                )
+            })?;
+
         cert_req
             .sign(&self.pkey, MessageDigest::sha256())
             .map_err(|err: ErrorStack| {

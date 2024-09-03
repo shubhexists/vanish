@@ -10,8 +10,8 @@ use openssl::{
     rsa::Rsa,
     x509::X509,
 };
-use std::fs;
-use std::path::PathBuf;
+use std::{error, fs, io, path::Path, process::Output};
+use std::{path::PathBuf, process::Command};
 
 pub fn generate_cert_key_pair() -> CertKeyResult<(Rsa<Private>, PKey<Private>)> {
     let rsa: Rsa<Private> =
@@ -75,7 +75,7 @@ pub fn get_certificates_from_data_dir() -> Option<(X509, PKey<Private>)> {
 pub fn save_generated_cert_key_files(
     cert: &X509,
     key: &PKey<Private>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn error::Error>> {
     if let Some(ref data_dir) = *x509::DATA_DIR {
         if !data_dir.exists() {
             fs::create_dir_all(data_dir).map_err(|err| {
@@ -90,13 +90,13 @@ pub fn save_generated_cert_key_files(
         let ca_cert_file_str: &str = ca_certfile.to_str().ok_or_else(|| {
             let err: String = "Failed to convert ca_certfile path to string".to_string();
             eprintln!("{}", err);
-            std::io::Error::new(std::io::ErrorKind::InvalidInput, err)
+            io::Error::new(io::ErrorKind::InvalidInput, err)
         })?;
 
         let ca_key_file_str: &str = ca_keyfile.to_str().ok_or_else(|| {
             let err: String = "Failed to convert ca_keyfile path to string".to_string();
             eprintln!("{}", err);
-            std::io::Error::new(std::io::ErrorKind::InvalidInput, err)
+            io::Error::new(io::ErrorKind::InvalidInput, err)
         })?;
 
         CACert::save_cert(cert, ca_cert_file_str)?;
@@ -105,9 +105,17 @@ pub fn save_generated_cert_key_files(
     } else {
         let err: String = "Unable to get Data Directory".to_string();
         eprintln!("{}", err);
-        Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            err,
-        )))
+        Err(Box::new(io::Error::new(io::ErrorKind::NotFound, err)))
     }
+}
+
+pub fn _path_exists(path: &str) -> bool {
+    Path::new(path).exists()
+}
+
+pub fn _binary_exists(binary: &str) -> bool {
+    Command::new(binary)
+        .output()
+        .map(|output: Output| output.status.success())
+        .unwrap_or(false)
 }

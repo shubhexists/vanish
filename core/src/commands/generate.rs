@@ -1,5 +1,5 @@
 use crate::{
-    trust_stores::{CAValue, NSSValue},
+    trust_stores::{nss::NSSValue, nss_profile::NSSProfile, CAValue},
     utils::{get_certificates_from_data_dir, save_generated_cert_key_files},
     x509::{
         ca_cert::CACert, ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert,
@@ -11,7 +11,7 @@ use openssl::{
     x509::{X509Req, X509},
 };
 use std::{
-    fs,
+    error, fs,
     path::{Path, PathBuf},
 };
 
@@ -27,7 +27,7 @@ pub fn generate(
     output: Option<String>,
     request: bool,
     install: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn error::Error>> {
     if request {
         for domain in &domains {
             let distinguished_name: DistinguishedName = DistinguishedName {
@@ -191,14 +191,7 @@ pub fn generate(
                     }
                 }
             }
-            if install {
-                let trust_store_object: CAValue = CAValue {
-                    certificate: cert.clone(),
-                };
-                CAValue::install_certificate(&trust_store_object)?;
-                let nss_store_object: NSSValue = NSSValue { certificate: cert };
-                NSSValue::install_certificate(&nss_store_object)?;
-            }
+            if install {}
             return Ok(());
         } else {
             eprintln!("Corresponding KeyFile Not Found");
@@ -315,14 +308,21 @@ pub fn generate(
         }
 
         if install {
-            let trust_store_object: CAValue = CAValue {
-                certificate: d_cert.clone(),
-            };
-            CAValue::install_certificate(&trust_store_object)?;
-            let nss_store_object: NSSValue = NSSValue {
+            let ca_value_object: CAValue = CAValue {
                 certificate: d_cert,
             };
-            NSSValue::install_certificate(&nss_store_object)?;
+            ca_value_object.install_certificate()?;
+            let nss_profile_object: NSSProfile = NSSProfile::new();
+            let ca_unique_name = "vanish-root-test-123456-ujjwal".to_string();
+            let caroot = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
+            let mkcert = NSSValue::new(nss_profile_object, ca_unique_name, caroot);
+            let success = mkcert.install_nss();
+
+            if success {
+                println!("Certificate installed successfully.");
+            } else {
+                eprintln!("Failed to install the certificate.");
+            }
         }
     } else {
         if noca {
@@ -446,6 +446,23 @@ pub fn generate(
                         domain
                     )
                 }
+            }
+        }
+        if install {
+            let ca_value_object: CAValue = CAValue {
+                certificate: created_cert,
+            };
+            ca_value_object.install_certificate()?;
+            let nss_profile_object: NSSProfile = NSSProfile::new();
+            let ca_unique_name: String = "vanish-root-testing-1234-ujjwal".to_string();
+            let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
+            let mkcert: NSSValue = NSSValue::new(nss_profile_object, ca_unique_name, caroot);
+            let success: bool = mkcert.install_nss();
+
+            if success {
+                println!("Certificate installed successfully.");
+            } else {
+                eprintln!("Failed to install the certificate.");
             }
         }
     }

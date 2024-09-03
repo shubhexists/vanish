@@ -11,8 +11,8 @@ use openssl::{
     pkey::{PKey, Private, Public},
     rsa::Rsa,
     x509::{
-        extension::{ExtendedKeyUsage, KeyUsage},
-        X509Builder, X509Name, X509NameRef, X509Req, X509,
+        extension::{ExtendedKeyUsage, KeyUsage, SubjectAlternativeName},
+        X509Builder, X509Extension, X509Name, X509NameRef, X509Req, X509,
     },
 };
 use std::io::Write;
@@ -123,6 +123,19 @@ impl LeafCert {
                     X509Error::X509CertificateBuilerEntryError(err, "ExtendedKeyUsage".to_string())
                 })?;
 
+            let mut san: SubjectAlternativeName = SubjectAlternativeName::new();
+            // Replace with the domain name ?
+            san.dns("localhost");
+            let san: X509Extension = san
+                .build(&cert_builder.x509v3_context(Some(&cert_file.as_ref()), None))
+                .unwrap();
+
+            cert_builder
+                .append_extension(san)
+                .map_err(|err: ErrorStack| {
+                    X509Error::X509CertificateBuilerEntryError(err, "SAN".to_string())
+                })?;
+
             cert_builder
                 .sign(key_file, MessageDigest::sha256())
                 .map_err(|err: ErrorStack| {
@@ -211,6 +224,19 @@ impl LeafCert {
                                 err,
                                 "ExtendedKeyUsage".to_string(),
                             )
+                        })?;
+
+                    let mut san: SubjectAlternativeName = SubjectAlternativeName::new();
+                    // Replace with the domain name ?
+                    san.dns("localhost");
+                    let san: X509Extension = san
+                        .build(&cert_builder.x509v3_context(Some(&cert_file.as_ref()), None))
+                        .unwrap();
+
+                    cert_builder
+                        .append_extension(san)
+                        .map_err(|err: ErrorStack| {
+                            X509Error::X509CertificateBuilerEntryError(err, "SAN".to_string())
                         })?;
 
                     cert_builder
