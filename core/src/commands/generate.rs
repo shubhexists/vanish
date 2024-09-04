@@ -9,11 +9,15 @@ use crate::{
         Certificate,
     },
 };
+use colored::*;
 use openssl::{
     pkey::{PKey, Private},
     x509::{X509Req, X509},
 };
-use std::error;
+use std::{
+    error::{self, Error},
+    path::PathBuf,
+};
 
 pub fn generate(
     domains: Vec<String>,
@@ -29,13 +33,31 @@ pub fn generate(
     install: bool,
 ) -> Result<(), Box<dyn error::Error>> {
     if request {
+        println!();
+        println!("Generated Certificate Requests for :");
         for domain in &domains {
             let distinguished_name: DistinguishedName =
                 create_distinguished_name(&commonname, &country, &state);
             let (ca_req_certificate, private_key) =
                 CAReq::new(distinguished_name)?.generate_certificate()?;
-            save_csr_certificate(domain.to_string(), &output, ca_req_certificate, private_key)?;
+            let is_saved: Result<PathBuf, Box<dyn Error>> =
+                save_csr_certificate(domain.to_string(), &output, ca_req_certificate, private_key);
+            match is_saved {
+                Ok(path) => {
+                    println!("   - \"{}\" ✅", domain);
+                    println!();
+                    println!(
+                        "{}: Your request certs and their corresponding keys are saved at: {:?}",
+                        "Note".green(),
+                        path
+                    );
+                }
+                Err(_err) => {
+                    println!("   - \"{}\" ❌", domain);
+                }
+            }
         }
+        println!();
         return Ok(());
     }
 
@@ -77,9 +99,11 @@ pub fn generate(
                 }
             }
             if install {}
+            println!();
             return Ok(());
         } else {
-            eprintln!("Corresponding KeyFile Not Found");
+            eprintln!("{}: Corresponding KeyFile Not Found", "Error".red());
+            println!();
             std::process::exit(1);
         }
     }
@@ -166,5 +190,6 @@ pub fn generate(
             generate_install(created_cert)?;
         }
     }
+    println!();
     Ok(())
 }

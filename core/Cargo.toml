@@ -17,3 +17,4 @@ openssl = "0.10"
 clap = { version = "4.4.8", features = ["derive"] }
 dirs = "5.0"
 lazy_static = "1.4"
+colored = "2.0"

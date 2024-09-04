@@ -36,7 +36,7 @@ pub fn generate_install(cert: X509) -> Result<(), Box<dyn Error>> {
         );
     }
     if success {
-        println!("Certificate installed successfully.");
+        println!("Certificate installed successfully 👍");
     } else {
         eprintln!("Failed to install the certificate.");
     }
@@ -133,7 +133,7 @@ pub fn save_csr_certificate(
     output: &Option<String>,
     ca_req_certificate: X509Req,
     private_key: PKey<Private>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<PathBuf, Box<dyn Error>> {
     if let Some(output) = &output {
         let output_path: &Path = Path::new(output);
         if !output_path.exists() {
@@ -158,6 +158,7 @@ pub fn save_csr_certificate(
         } else {
             eprintln!("Error: Error creating file for key : {}", name);
         }
+        return Ok(output_path);
     } else {
         let output_path: PathBuf = std::env::current_dir()?;
         let file_name: PathBuf = output_path.join(format!("csr-{}.pem", name));
@@ -174,8 +175,8 @@ pub fn save_csr_certificate(
         } else {
             eprintln!("Error: Error creating file for key : {}", name);
         }
+        Ok(output_path)
     }
-    Ok(())
 }
 
 pub fn create_distinguished_name(
