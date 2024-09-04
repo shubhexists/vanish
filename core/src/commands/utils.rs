@@ -5,6 +5,7 @@ use crate::{
     },
     x509::{ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert},
 };
+use colored::*;
 use openssl::{
     pkey::{PKey, Private},
     x509::{X509Req, X509},
@@ -61,18 +62,56 @@ pub fn save_pem_certificate(
         let file_name: PathBuf = output_path.join(name);
         let file_name_str: Option<&str> = file_name.to_str();
         if let Some(file_name_str) = file_name_str {
-            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+            match LeafCert::save_cert(&leaf_certificate, file_name_str) {
+                Ok(()) => {
+                    println!();
+                    println!(
+                        "{}: Your local certificate from request is saved at: {:?}",
+                        "Note".green(),
+                        file_name
+                    );
+                    println!(
+                        "{}: You may use the Private Key of the Certificate Provided as the Private Key of your Local Certificate.",
+                        "Note".green()
+                    );
+                }
+                Err(err) => {
+                    eprintln!("{}", err);
+                }
+            };
         } else {
-            eprintln!("Error: Error creating file for generated Certificate :");
+            eprintln!(
+                "{}: Error creating file for Generated Certificate :",
+                "Error".red()
+            );
         }
     } else {
         let output_path: PathBuf = std::env::current_dir()?;
         let file_name: PathBuf = output_path.join("csr_cert.pem");
         let file_name_str: Option<&str> = file_name.to_str();
         if let Some(file_name_str) = file_name_str {
-            LeafCert::save_cert(&leaf_certificate, file_name_str)?;
+            match LeafCert::save_cert(&leaf_certificate, file_name_str) {
+                Ok(()) => {
+                    println!();
+                    println!(
+                        "{}: Your local certificate from request is saved at: {:?}",
+                        "Note".green(),
+                        file_name
+                    );
+                    println!(
+                        "{}: You may use the Private Key of the Certificate Provided as the Private Key of your Local Certificate.",
+                        "Note".green()
+                    );
+                }
+                Err(err) => {
+                    eprintln!("{}", err);
+                }
+            };
         } else {
-            eprintln!("Error: Error creating file for generated Certificate");
+            eprintln!(
+                "{}: Error creating file for Generated Certificate",
+                "Error".red()
+            );
         }
     }
     Ok(())

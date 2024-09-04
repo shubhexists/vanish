@@ -32,8 +32,8 @@ pub fn generate(
     request: bool,
     install: bool,
 ) -> Result<(), Box<dyn error::Error>> {
+    println!();
     if request {
-        println!();
         println!("Generated Certificate Requests for :");
         for domain in &domains {
             let distinguished_name: DistinguishedName =
@@ -63,40 +63,98 @@ pub fn generate(
 
     if let Some(certfile) = certfile {
         if let Some(keyfile) = keyfile {
-            let (cert, pkey) = CACert::load_ca_cert(&certfile, &keyfile)?;
+            let (cert, pkey) = match CACert::load_ca_cert(&certfile, &keyfile) {
+                Ok(cert_pkey) => cert_pkey,
+                Err(err) => {
+                    eprintln!("{}", err);
+                    std::process::exit(1);
+                }
+            };
             if let Some(csr) = &csr {
                 let distinguished_name: DistinguishedName =
                     create_distinguished_name(&commonname, &country, &state);
-                let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
+                let csr_object: X509Req = match CAReq::read_csr_from_file(csr) {
+                    Ok(csr) => csr,
+                    Err(err) => {
+                        eprintln!("{}", err);
+                        std::process::exit(1);
+                    }
+                };
                 let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                let (leaf_certificate, _private_key) = LeafCert::generate_certificate(
+                println!();
+                let (leaf_certificate, _private_key) = match LeafCert::generate_certificate(
                     leaf_cert_object,
                     &cert,
                     &pkey,
                     Some(&csr_object),
-                )?;
-                save_pem_certificate("csr_cert.pem".to_string(), output, leaf_certificate)?;
+                ) {
+                    Ok((a, b)) => {
+                        println!("Generating Certificate for Signing Request Successful! 👍");
+                        (a, b)
+                    }
+                    Err(err) => {
+                        println!("Generating Certificate for Signing Request Failed! 👎");
+                        eprintln!("{}", err);
+                        std::process::exit(1);
+                    }
+                };
+                match save_pem_certificate("csr_cert.pem".to_string(), output, leaf_certificate) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        println!("{}", err);
+                        std::process::exit(1);
+                    }
+                };
             } else {
+                println!();
+                println!("Generated Certificate for : ");
                 for domain in &domains {
                     let distinguished_name: DistinguishedName =
                         create_distinguished_name(&commonname, &country, &state);
                     let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                    let (leaf_certificate, private_key) =
-                        LeafCert::generate_certificate(leaf_cert_object, &cert, &pkey, None)?;
+                    let (leaf_certificate, private_key) = match LeafCert::generate_certificate(
+                        leaf_cert_object,
+                        &cert,
+                        &pkey,
+                        None,
+                    ) {
+                        Ok((a, b)) => {
+                            println!("   - \"{}\" ✅", domain);
+                            (a, b)
+                        }
+                        Err(err) => {
+                            println!("   - \"{}\" ❌", domain);
+                            eprintln!("{}", err);
+                            std::process::exit(1);
+                        }
+                    };
                     if let Some(private_key) = private_key {
-                        save_pem_key_pair(
+                        match save_pem_key_pair(
                             &output,
                             leaf_certificate,
                             domain.to_string(),
                             private_key,
-                        )?;
+                        ) {
+                            Ok(()) => {}
+                            Err(err) => {
+                                println!("{}", err);
+                            }
+                        };
                     } else {
                         eprintln!(
-                            "Oops! We lost your private key for domain {}. Please try again!",
-                            domain
+                            "{}{}{}",
+                            "Oops! We lost your private key for domain ".yellow(),
+                            domain.yellow(),
+                            ". Please try again!".yellow()
                         )
                     }
                 }
+                println!();
+                println!(
+                    "{}: All Successful Certificates and their corresponding keys are saved at : {}",
+                    "Note".green(),
+                    output.unwrap()
+                );
             }
             if install {}
             println!();
@@ -115,12 +173,23 @@ pub fn generate(
                 create_distinguished_name(&commonname, &country, &state);
             let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
             let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-            let (leaf_certificate, _private_key) = LeafCert::generate_certificate(
+            println!();
+            let (leaf_certificate, _private_key) = match LeafCert::generate_certificate(
                 leaf_cert_object,
                 &d_cert,
                 &d_pkey,
                 Some(&csr_object),
-            )?;
+            ) {
+                Ok((a, b)) => {
+                    println!("Generating Certificate for Signing Request Successful! 👍");
+                    (a, b)
+                }
+                Err(err) => {
+                    println!("Generating Certificate for Signing Request Failed! 👎");
+                    eprintln!("{}", err);
+                    std::process::exit(1);
+                }
+            };
             save_pem_certificate("csr_cert.pem".to_string(), output, leaf_certificate)?;
         } else {
             for domain in &domains {
