@@ -192,12 +192,28 @@ pub fn generate(
             };
             save_pem_certificate("csr_cert.pem".to_string(), output, leaf_certificate)?;
         } else {
+            println!();
+            println!("Generated Certificate for : ");
             for domain in &domains {
                 let distinguished_name: DistinguishedName =
                     create_distinguished_name(&commonname, &country, &state);
                 let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                let (leaf_certificate, private_key) =
-                    LeafCert::generate_certificate(leaf_cert_object, &d_cert, &d_pkey, None)?;
+                let (leaf_certificate, private_key) = match LeafCert::generate_certificate(
+                    leaf_cert_object,
+                    &d_cert,
+                    &d_pkey,
+                    None,
+                ) {
+                    Ok((a, b)) => {
+                        println!("   - \"{}\" ✅", domain);
+                        (a, b)
+                    }
+                    Err(err) => {
+                        println!("   - \"{}\" ❌", domain);
+                        eprintln!("{}", err);
+                        std::process::exit(1);
+                    }
+                };
                 if let Some(private_key) = private_key {
                     save_pem_key_pair(&output, leaf_certificate, domain.to_string(), private_key)?;
                 } else {
@@ -207,6 +223,12 @@ pub fn generate(
                     )
                 }
             }
+            println!();
+            println!(
+                "{}: All Successful Certificates and their corresponding keys are saved at : {}",
+                "Note".green(),
+                output.unwrap()
+            );
         }
 
         if install {
@@ -214,7 +236,10 @@ pub fn generate(
         }
     } else {
         if noca {
-            eprintln!("Error: No CA Certificates found and generation of a new one is disabled by `--no-ca`");
+            eprintln!(
+                "{}: No CA Certificates found and generation of a new one is disabled by `--no-ca`",
+                "Error".red()
+            );
             std::process::exit(1)
         }
         let distinguished_name: DistinguishedName =
@@ -246,11 +271,23 @@ pub fn generate(
                     None,
                 )?;
                 if let Some(private_key) = private_key {
-                    save_pem_key_pair(&output, leaf_certificate, domain.to_string(), private_key)?;
+                    match save_pem_key_pair(
+                        &output,
+                        leaf_certificate,
+                        domain.to_string(),
+                        private_key,
+                    ) {
+                        Ok(()) => {}
+                        Err(err) => {
+                            println!("{}", err);
+                        }
+                    };
                 } else {
                     eprintln!(
-                        "Oops! We lost your private key for domain {}. Please try again!",
-                        domain
+                        "{}{}{}",
+                        "Oops! We lost your private key for domain ".yellow(),
+                        domain.yellow(),
+                        ". Please try again!".yellow()
                     )
                 }
             }
