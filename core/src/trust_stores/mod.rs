@@ -1,4 +1,5 @@
 mod errors;
+pub mod firefox;
 pub mod nss;
 pub mod nss_profile;
 

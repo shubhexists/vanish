@@ -313,10 +313,10 @@ pub fn generate(
             };
             ca_value_object.install_certificate()?;
             let nss_profile_object: NSSProfile = NSSProfile::new();
-            let ca_unique_name = "vanish-root-test-123456-ujjwal".to_string();
-            let caroot = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
-            let mkcert = NSSValue::new(nss_profile_object, ca_unique_name, caroot);
-            let success = mkcert.install_nss();
+            let ca_unique_name: String = "vanish-root-test-123456-ujjwalpppp".to_string();
+            let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
+            let mkcert: NSSValue = NSSValue::new(nss_profile_object, ca_unique_name, caroot);
+            let success: bool = mkcert.install_nss();
 
             if success {
                 println!("Certificate installed successfully.");

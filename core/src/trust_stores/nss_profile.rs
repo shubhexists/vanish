@@ -6,7 +6,6 @@ pub struct NSSProfile {
     pub has_certutil: bool,
     pub certutil_path: Option<String>,
     pub nss_dbs: Vec<String>,
-    pub firefox_paths: Vec<String>,
 }
 
 impl NSSProfile {
@@ -27,21 +26,8 @@ impl NSSProfile {
             "/etc/pki/nssdb".to_string(),
         ];
 
-        let firefox_paths: Vec<String> = vec![
-            "/usr/bin/firefox".to_string(),
-            "/usr/bin/firefox-nightly".to_string(),
-            "/usr/bin/firefox-developer-edition".to_string(),
-            "/snap/firefox".to_string(),
-            "/Applications/Firefox.app".to_string(),
-            "/Applications/FirefoxDeveloperEdition.app".to_string(),
-            "/Applications/Firefox Developer Edition.app".to_string(),
-            "/Applications/Firefox Nightly.app".to_string(),
-            "C:\\Program Files\\Mozilla Firefox".to_string(),
-        ];
-
         let mut has_nss: bool = false;
-        let all_paths: Vec<String> = [&nss_dbs[..], &firefox_paths[..]].concat();
-        for path in &all_paths {
+        for path in &nss_dbs {
             if Path::new(path).exists() {
                 has_nss = true;
                 break;
@@ -78,7 +64,6 @@ impl NSSProfile {
             has_certutil,
             certutil_path,
             nss_dbs,
-            firefox_paths,
         }
     }
 

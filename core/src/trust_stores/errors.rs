@@ -1,5 +1,5 @@
 use openssl::error::ErrorStack;
-use std::{error::Error, fmt, io};
+use std::{env::VarError, error::Error, fmt, io};
 
 #[derive(Debug)]
 pub enum TrustStoreError {
@@ -25,3 +25,25 @@ impl fmt::Display for TrustStoreError {
 }
 
 impl Error for TrustStoreError {}
+
+pub enum FirefoxTrustStoreError {
+    ENVVariableNotFound(VarError, String),
+    IOError(io::Error),
+}
+
+impl fmt::Display for FirefoxTrustStoreError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ENVVariableNotFound(err, variable) => {
+                write!(
+                    f,
+                    "Error getting Environment varibale {} : {}",
+                    variable, err
+                )
+            }
+            Self::IOError(err) => {
+                write!(f, "Error reading the default firefox directoryL {}", err)
+            }
+        }
+    }
+}

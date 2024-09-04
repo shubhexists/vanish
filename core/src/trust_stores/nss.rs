@@ -1,6 +1,6 @@
-use super::nss_profile::NSSProfile;
+use crate::trust_stores::nss_profile::NSSProfile;
 use std::{
-    io,
+    fs, io,
     path::Path,
     process::{Command, ExitStatus},
 };
@@ -107,18 +107,12 @@ impl NSSValue {
         F: FnMut(&str),
     {
         let mut found: usize = 0;
-        let mut profiles: Vec<String> = Vec::new();
+        let profiles = &self.profile.nss_dbs;
 
-        profiles.extend_from_slice(&self.profile.nss_dbs);
-        for ff in &self.profile.firefox_paths {
-            let path: &Path = Path::new(ff);
-            if path.exists() {
-                profiles.push(ff.clone());
-            }
-        }
+        println!("{:?}", profiles);
 
-        for profile in &profiles {
-            let stat: Result<std::fs::Metadata, io::Error> = Path::new(profile).metadata();
+        for profile in profiles {
+            let stat: Result<fs::Metadata, io::Error> = Path::new(profile).metadata();
             if stat.is_ok() && stat.unwrap().is_dir() {
                 if NSSProfile::path_exists(&format!("{}/cert9.db", profile)) {
                     f(&format!("sql:{}", profile));
