@@ -94,6 +94,11 @@ fn main() {
                     );
                     std::process::exit(1);
                 }
+                
+                if !domains.is_empty() && csr.is_some() {
+                    eprintln!("Error: `-d` (domains) and `--csr` cannot be used together.");
+                    std::process::exit(1);
+                }
 
                 if request && csr.is_some() {
                     eprint!("Error: `--req-only` and `csr` are incompatible. You can't generate requests from a request certificate.");
@@ -101,7 +106,8 @@ fn main() {
                 }
 
                 if request && install {
-                    eprint!("Error: `--req-only` and `csr` are incompatible. You can't generate requests from a request certificate.");
+                    //CORRECT THIS
+                    eprint!("Error: `--req-only` and `install` are incompatible. You can't generate requests from a request certificate.");
                     std::process::exit(1);
                 }
 

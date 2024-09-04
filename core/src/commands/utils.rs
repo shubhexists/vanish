@@ -160,7 +160,7 @@ pub fn save_csr_certificate(
         }
     } else {
         let output_path: PathBuf = std::env::current_dir()?;
-        let file_name: PathBuf = output_path.join(format!("{}.pem", name));
+        let file_name: PathBuf = output_path.join(format!("csr-{}.pem", name));
         let file_name_str: Option<&str> = file_name.to_str();
         if let Some(file_name_str) = file_name_str {
             CAReq::save_certificate_to_file(&ca_req_certificate, file_name_str)?;
