@@ -94,7 +94,7 @@ pub fn save_pem_key_pair(
         } else {
             std::env::current_dir()?.join(output_path)
         };
-        let file_name: PathBuf = output_path.join("csr_cert.pem");
+        let file_name: PathBuf = output_path.join(format!("{}.pem", name));
         let file_name_str: Option<&str> = file_name.to_str();
         if let Some(file_name_str) = file_name_str {
             LeafCert::save_cert(&leaf_certificate, file_name_str)?;
@@ -110,7 +110,7 @@ pub fn save_pem_key_pair(
         }
     } else {
         let output_path: PathBuf = std::env::current_dir()?;
-        let file_name: PathBuf = output_path.join("csr_cert.pem");
+        let file_name: PathBuf = output_path.join(format!("{}.pem", name));
         let file_name_str: Option<&str> = file_name.to_str();
         if let Some(file_name_str) = file_name_str {
             LeafCert::save_cert(&leaf_certificate, file_name_str)?;
