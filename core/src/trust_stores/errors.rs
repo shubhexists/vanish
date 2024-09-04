@@ -26,6 +26,7 @@ impl fmt::Display for TrustStoreError {
 
 impl Error for TrustStoreError {}
 
+#[derive(Debug)]
 pub enum FirefoxTrustStoreError {
     ENVVariableNotFound(VarError, String),
     IOError(io::Error),
@@ -47,3 +48,5 @@ impl fmt::Display for FirefoxTrustStoreError {
         }
     }
 }
+
+impl Error for FirefoxTrustStoreError {}

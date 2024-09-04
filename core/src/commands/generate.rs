@@ -1,5 +1,8 @@
 use crate::{
-    trust_stores::{nss::NSSValue, nss_profile::NSSProfile, CAValue},
+    trust_stores::{
+        firefox::FirefoxTrustStore, nss::NSSValue, nss_profile::NSSProfile,
+        utils::check_if_firefox_exists, CAValue,
+    },
     utils::{get_certificates_from_data_dir, save_generated_cert_key_files},
     x509::{
         ca_cert::CACert, ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert,
@@ -313,11 +316,22 @@ pub fn generate(
             };
             ca_value_object.install_certificate()?;
             let nss_profile_object: NSSProfile = NSSProfile::new();
-            let ca_unique_name: String = "vanish-root-test-123456-ujjwalpppp".to_string();
+            let ca_unique_name: String = "vanish-root-test-123456-shubham-brr".to_string();
             let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
-            let mkcert: NSSValue = NSSValue::new(nss_profile_object, ca_unique_name, caroot);
+            let mkcert: NSSValue =
+                NSSValue::new(nss_profile_object, ca_unique_name.clone(), caroot.clone());
             let success: bool = mkcert.install_nss();
-
+            let firefox_exists: bool = check_if_firefox_exists()?;
+            if firefox_exists {
+                let firefox_trust_store_object: FirefoxTrustStore =
+                    FirefoxTrustStore::new(ca_unique_name, caroot)?;
+                let paths_with_trust_stores: Vec<PathBuf> =
+                    FirefoxTrustStore::find_cert_directories(&firefox_trust_store_object)?;
+                FirefoxTrustStore::install_firefox_certificates(
+                    &firefox_trust_store_object,
+                    paths_with_trust_stores,
+                );
+            }
             if success {
                 println!("Certificate installed successfully.");
             } else {
@@ -454,11 +468,23 @@ pub fn generate(
             };
             ca_value_object.install_certificate()?;
             let nss_profile_object: NSSProfile = NSSProfile::new();
-            let ca_unique_name: String = "vanish-root-testing-1234-ujjwal".to_string();
+            let ca_unique_name: String = "vanish-root-testing-1234-shubham-brr".to_string();
             let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
-            let mkcert: NSSValue = NSSValue::new(nss_profile_object, ca_unique_name, caroot);
+            let mkcert: NSSValue =
+                NSSValue::new(nss_profile_object, ca_unique_name.clone(), caroot.clone());
             let success: bool = mkcert.install_nss();
-
+            let firefox_exists: bool = check_if_firefox_exists()?;
+            if firefox_exists {
+                let firefox_trust_store_object: FirefoxTrustStore =
+                    FirefoxTrustStore::new(ca_unique_name, caroot)?;
+                let paths_with_trust_stores: Vec<PathBuf> =
+                    FirefoxTrustStore::find_cert_directories(&firefox_trust_store_object)?;
+                println!("{:?}", paths_with_trust_stores);
+                FirefoxTrustStore::install_firefox_certificates(
+                    &firefox_trust_store_object,
+                    paths_with_trust_stores,
+                );
+            }
             if success {
                 println!("Certificate installed successfully.");
             } else {

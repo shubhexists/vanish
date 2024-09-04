@@ -63,7 +63,7 @@ impl NSSValue {
                     .arg("-n")
                     .arg(&self.ca_unique_name)
                     .arg("-i")
-                    .arg(format!("{}", self.caroot))
+                    .arg(&self.caroot)
                     .status();
 
             if let Err(err) = cmd {
