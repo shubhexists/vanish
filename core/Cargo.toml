@@ -10,11 +10,14 @@ categories = ["development-tools", "command-line-utilities", "parsing", "os", "h
 keywords = ["https", "certificates", "localhost", "local-development", "root-ca"]
 readme = "README.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 openssl = "0.10"
 clap = { version = "4.4.8", features = ["derive"] }
 dirs = "5.0"
+sha2 = "0.10"
 lazy_static = "1.4"
 colored = "2.0"
+base64 = "0.21"
+
+[dev-dependencies]
+tempfile = "3.3"
