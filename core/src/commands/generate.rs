@@ -252,24 +252,47 @@ pub fn generate(
                 create_distinguished_name(&commonname, &country, &state);
             let csr_object: X509Req = CAReq::read_csr_from_file(csr)?;
             let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-            let (leaf_certificate, _private_key) = LeafCert::generate_certificate(
+            println!();
+            let (leaf_certificate, _private_key) = match LeafCert::generate_certificate(
                 leaf_cert_object,
                 &created_cert,
                 &created_key,
                 Some(&csr_object),
-            )?;
+            ) {
+                Ok((a, b)) => {
+                    println!("Generating Certificate for Signing Request Successful! 👍");
+                    (a, b)
+                }
+                Err(err) => {
+                    println!("Generating Certificate for Signing Request Failed! 👎");
+                    eprintln!("{}", err);
+                    std::process::exit(1);
+                }
+            };
             save_pem_certificate("csr_cert.pem".to_string(), output, leaf_certificate)?;
         } else {
+            println!();
+            println!("Generated Certificate for : ");
             for domain in &domains {
                 let distinguished_name: DistinguishedName =
                     create_distinguished_name(&commonname, &country, &state);
                 let leaf_cert_object: LeafCert = LeafCert::new(distinguished_name)?;
-                let (leaf_certificate, private_key) = LeafCert::generate_certificate(
+                let (leaf_certificate, private_key) = match LeafCert::generate_certificate(
                     leaf_cert_object,
                     &created_cert,
                     &created_key,
                     None,
-                )?;
+                ) {
+                    Ok((a, b)) => {
+                        println!("   - \"{}\" ✅", domain);
+                        (a, b)
+                    }
+                    Err(err) => {
+                        println!("   - \"{}\" ❌", domain);
+                        eprintln!("{}", err);
+                        std::process::exit(1);
+                    }
+                };
                 if let Some(private_key) = private_key {
                     match save_pem_key_pair(
                         &output,
@@ -291,6 +314,13 @@ pub fn generate(
                     )
                 }
             }
+
+            println!();
+            println!(
+                "{}: All Successful Certificates and their corresponding keys are saved at : {}",
+                "Note".green(),
+                output.unwrap()
+            );
         }
         if install {
             generate_install(created_cert)?;
