@@ -1,4 +1,7 @@
+use colored::Colorize;
+
 use super::errors::FirefoxTrustStoreError;
+use std::borrow::Cow;
 use std::process::{exit, Stdio};
 use std::{
     env, fs, io,
@@ -80,6 +83,39 @@ impl FirefoxTrustStore {
         })
     }
 
+    fn is_certificate_installed(&self, cert_dir: &Path) -> Result<bool, FirefoxTrustStoreError> {
+        match &self.certutil_path {
+            Some(certutil) => {
+                let output = Command::new(certutil)
+                    .arg("-L")
+                    .arg("-d")
+                    .arg(cert_dir.to_str().unwrap())
+                    .output()
+                    .map_err(|err: io::Error| FirefoxTrustStoreError::IOError(err))?;
+
+                if output.status.success() {
+                    let stdout: Cow<'_, str> = String::from_utf8_lossy(&output.stdout);
+
+                    if stdout.contains(&self.ca_unique_name) {
+                        return Ok(true);
+                    }
+                } else {
+                    eprintln!(
+                        "{}: Failed to list certificates in {:?}",
+                        "Error".red(),
+                        cert_dir
+                    );
+                }
+            }
+            None => {
+                eprint!("{}: No certutil found. Please install!", "Error".red());
+                exit(1);
+            }
+        }
+
+        Ok(false)
+    }
+
     pub fn find_cert_directories(&self) -> Result<Vec<PathBuf>, FirefoxTrustStoreError> {
         let mut cert_dirs: Vec<PathBuf> = Vec::new();
         for profile_dir in &self.firefox_profile {
@@ -111,39 +147,55 @@ impl FirefoxTrustStore {
     }
 
     pub fn install_firefox_certificates(&self, cert_paths: Vec<PathBuf>) {
-        match &self.certutil_path {
-            Some(path) => {
-                for cert_dir in cert_paths {
-                    let cmd_result: Result<ExitStatus, io::Error> = Command::new(path)
-                        .arg("-A")
-                        .arg("-d")
-                        .arg(cert_dir.to_str().unwrap())
-                        .arg("-t")
-                        .arg("C,,")
-                        .arg("-n")
-                        .arg(&self.ca_unique_name)
-                        .arg("-i")
-                        .arg(&self.vanish_ca_path)
-                        .stdout(Stdio::null())
-                        .status();
+        let all_installed: bool = cert_paths.iter().all(|cert_dir: &PathBuf| {
+            match self.is_certificate_installed(cert_dir) {
+                Ok(true) => true,
+                Ok(false) => false,
+                Err(_) => false,
+            }
+        });
 
-                    match cmd_result {
-                        Ok(status) if status.success() => {
-                            println!("Successfully installed certificate in {:?}", cert_dir);
+        if all_installed {
+            println!(
+                "{}: Certificate already installed in all Firefox profiles ✅.",
+                "Note".green()
+            );
+            return;
+        } else {
+            match &self.certutil_path {
+                Some(path) => {
+                    for cert_dir in cert_paths {
+                        if let Ok(true) = self.is_certificate_installed(&cert_dir) {
+                            continue;
                         }
-                        Ok(_) => {
-                            eprintln!("Failed to install certificate in {:?}", cert_dir);
-                        }
-                        Err(err) => {
-                            eprintln!("Error executing certutil: {:?}", err);
+
+                        let cmd_result: Result<ExitStatus, io::Error> = Command::new(path)
+                            .arg("-A")
+                            .arg("-d")
+                            .arg(cert_dir.to_str().unwrap())
+                            .arg("-t")
+                            .arg("C,,")
+                            .arg("-n")
+                            .arg(&self.ca_unique_name)
+                            .arg("-i")
+                            .arg(&self.vanish_ca_path)
+                            .stdout(Stdio::null())
+                            .status();
+
+                        match cmd_result {
+                            Ok(_) => {}
+                            Err(err) => {
+                                eprintln!("{}: executing certutil: {:?}", "Error".red(), err);
+                            }
                         }
                     }
+                    println!("Certificate successfully installed in all Firefox profiles ✅.");
                 }
-            }
-            None => {
-                eprint!("No certutil found. Please install!");
-                exit(1);
-            }
-        };
+                None => {
+                    eprint!("No certutil found. Please install!");
+                    exit(1);
+                }
+            };
+        }
     }
 }

@@ -171,7 +171,6 @@ pub fn binary_exists(binary: &str) -> bool {
         .unwrap_or(false)
 }
 
-#[allow(dead_code)]
 pub fn get_unique_hash(csr_path: &str) -> Result<String, io::Error> {
     let mut file: File = File::open(csr_path)?;
     let mut csr_contents: Vec<u8> = Vec::new();

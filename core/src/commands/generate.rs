@@ -168,6 +168,10 @@ pub fn generate(
 
     let default_cert_key_files: Option<(X509, PKey<Private>)> = get_certificates_from_data_dir();
     if let Some((d_cert, d_pkey)) = default_cert_key_files {
+        if install {
+            println!();
+            generate_install(&d_cert)?;
+        }
         if let Some(csr) = &csr {
             let distinguished_name: DistinguishedName =
                 create_distinguished_name(&commonname, &country, &state);
@@ -230,10 +234,6 @@ pub fn generate(
                 output.unwrap()
             );
         }
-
-        if install {
-            generate_install(d_cert)?;
-        }
     } else {
         if noca {
             eprintln!(
@@ -247,6 +247,12 @@ pub fn generate(
         let (created_cert, created_key) =
             CACert::new(distinguished_name)?.generate_certificate()?;
         save_generated_cert_key_files(&created_cert, &created_key)?;
+
+        if install {
+            println!();
+            generate_install(&created_cert)?;
+        }
+
         if let Some(csr) = &csr {
             let distinguished_name: DistinguishedName =
                 create_distinguished_name(&commonname, &country, &state);
@@ -321,9 +327,6 @@ pub fn generate(
                 "Note".green(),
                 output.unwrap()
             );
-        }
-        if install {
-            generate_install(created_cert)?;
         }
     }
     println!();

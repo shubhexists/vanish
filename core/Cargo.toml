@@ -1,6 +1,6 @@
 [package]
 name = "vanish"
-version = "0.1.2"
+version = "0.2.0"
 description = "A simple config tool to make locally trusted X.509 development certificates for your domains"
 edition = "2021"
 license-file = "LICENSE"
@@ -14,7 +14,6 @@ readme = "README.md"
 openssl = "0.10"
 clap = { version = "4.4.8", features = ["derive"] }
 dirs = "5.0"
-sha2 = "0.10"
 lazy_static = "1.4"
 colored = "2.0"
 base64 = "0.21"

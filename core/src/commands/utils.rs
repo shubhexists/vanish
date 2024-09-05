@@ -2,7 +2,9 @@ use crate::{
     trust_stores::{
         firefox::FirefoxTrustStore, nss::NSSValue, nss_profile::NSSProfile,
         utils::check_if_firefox_exists, CAValue,
-    }, utils::get_unique_hash, x509::{ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert}
+    },
+    utils::get_unique_hash,
+    x509::{ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert},
 };
 use colored::*;
 use openssl::{
@@ -15,8 +17,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn generate_install(cert: X509) -> Result<(), Box<dyn Error>> {
-    let ca_value_object: CAValue = CAValue { certificate: cert };
+pub fn generate_install(cert: &X509) -> Result<(), Box<dyn Error>> {
+    let ca_value_object: CAValue = CAValue {
+        certificate: cert.clone(),
+    };
     ca_value_object.install_certificate()?;
     let nss_profile_object: NSSProfile = NSSProfile::new();
     let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();

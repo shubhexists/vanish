@@ -12,7 +12,7 @@ mod utils_tests;
 #[derive(Parser)]
 #[clap(
     name = "A simple config tool to make locally trusted X.509 development certificates for your domains",
-    version = "0.1.2",
+    version = "0.2.0",
     author = "Shubham Singh"
 )]
 struct CLI {
