@@ -18,13 +18,14 @@ use std::{
 };
 
 pub fn generate_install(cert: &X509) -> Result<(), Box<dyn Error>> {
+    let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
+    let ca_unique_name: String = get_unique_hash(&caroot)?;
     let ca_value_object: CAValue = CAValue {
+        ca_uniques_name: ca_unique_name.clone(),
         certificate: cert.clone(),
     };
     ca_value_object.install_certificate()?;
     let nss_profile_object: NSSProfile = NSSProfile::new();
-    let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
-    let ca_unique_name: String = get_unique_hash(&caroot)?;
     let mkcert: NSSValue =
         NSSValue::new(nss_profile_object, ca_unique_name.clone(), caroot.clone());
     let success: bool = mkcert.install_nss();

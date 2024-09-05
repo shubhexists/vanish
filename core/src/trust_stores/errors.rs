@@ -6,7 +6,7 @@ use std::{env::VarError, error::Error, fmt, io};
 pub enum TrustStoreError {
     PEMFileCreationError(io::Error),
     PEMEncodingError(ErrorStack),
-    WriteToFileError(io::Error),
+    CommandError(String),
 }
 
 impl fmt::Display for TrustStoreError {
@@ -28,13 +28,8 @@ impl fmt::Display for TrustStoreError {
                     err
                 )
             }
-            Self::WriteToFileError(err) => {
-                write!(
-                    f,
-                    "{}: Trust Store Writing to PEM file: {}",
-                    "Error".red(),
-                    err
-                )
+            Self::CommandError(desc) => {
+                write!(f, "{}", desc)
             }
         }
     }
