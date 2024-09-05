@@ -2,15 +2,25 @@ use crate::{
     errors::{CertKeyPairError, CertKeyResult, SerialNumberError, SerialNumberResult},
     x509::{self, ca_cert::CACert},
 };
+use base64::engine::general_purpose::URL_SAFE;
+use base64::Engine;
+use colored::*;
 use openssl::{
     asn1::Asn1Integer,
     bn::BigNum,
     error::ErrorStack,
     pkey::{PKey, Private},
     rsa::Rsa,
+    sha::Sha256,
     x509::X509,
 };
-use std::{error, fs, io, path::Path, process::Output};
+use std::{
+    error,
+    fs::{self, File},
+    io::{self, Read},
+    path::Path,
+    process::Output,
+};
 use std::{path::PathBuf, process::Command};
 
 pub fn generate_cert_key_pair() -> CertKeyResult<(Rsa<Private>, PKey<Private>)> {
@@ -36,7 +46,11 @@ pub fn get_certificates_from_data_dir() -> Option<(X509, PKey<Private>)> {
     if let Some(ref data_dir) = *x509::DATA_DIR {
         if !data_dir.exists() {
             if let Err(err) = fs::create_dir_all(data_dir) {
-                eprintln!("Failed to create data directory: {}", err);
+                eprintln!(
+                    "{}: Failed to create data directory: {}",
+                    "Error".red(),
+                    err
+                );
                 return None;
             }
         }
@@ -46,7 +60,10 @@ pub fn get_certificates_from_data_dir() -> Option<(X509, PKey<Private>)> {
         let ca_cert_file_str: &str = match ca_certfile.to_str() {
             Some(s) => s,
             None => {
-                eprintln!("Failed to convert ca_certfile path to string");
+                eprintln!(
+                    "{}: Failed to convert ca_certfile path to string",
+                    "Error".red()
+                );
                 return None;
             }
         };
@@ -54,7 +71,10 @@ pub fn get_certificates_from_data_dir() -> Option<(X509, PKey<Private>)> {
         let ca_key_file_str: &str = match ca_keyfile.to_str() {
             Some(s) => s,
             None => {
-                eprintln!("Failed to convert ca_keyfile path to string");
+                eprintln!(
+                    "{}: Failed to convert ca_keyfile path to string",
+                    "Error".red()
+                );
                 return None;
             }
         };
@@ -62,12 +82,12 @@ pub fn get_certificates_from_data_dir() -> Option<(X509, PKey<Private>)> {
         match CACert::load_ca_cert(ca_cert_file_str, ca_key_file_str) {
             Ok((cert, pkey)) => Some((cert, pkey)),
             Err(_err) => {
-                eprintln!("Warning: Generating new certificates");
+                eprintln!("{}: Generating new certificates ", "Warning".yellow());
                 None
             }
         }
     } else {
-        eprintln!("Unable to get Data Directory");
+        eprintln!("{}: Unable to get Data Directory", "Error".red());
         None
     }
 }
@@ -76,10 +96,15 @@ pub fn save_generated_cert_key_files(
     cert: &X509,
     key: &PKey<Private>,
 ) -> Result<(), Box<dyn error::Error>> {
+    println!();
     if let Some(ref data_dir) = *x509::DATA_DIR {
         if !data_dir.exists() {
             fs::create_dir_all(data_dir).map_err(|err| {
-                eprintln!("Failed to create data directory: {}", err);
+                eprintln!(
+                    "{}: Failed to create data directory: {}",
+                    "Error".red(),
+                    err
+                );
                 err
             })?;
         }
@@ -89,33 +114,73 @@ pub fn save_generated_cert_key_files(
 
         let ca_cert_file_str: &str = ca_certfile.to_str().ok_or_else(|| {
             let err: String = "Failed to convert ca_certfile path to string".to_string();
-            eprintln!("{}", err);
+            eprintln!("{}: {}", "Error".red(), err);
             io::Error::new(io::ErrorKind::InvalidInput, err)
         })?;
 
         let ca_key_file_str: &str = ca_keyfile.to_str().ok_or_else(|| {
             let err: String = "Failed to convert ca_keyfile path to string".to_string();
-            eprintln!("{}", err);
+            eprintln!("{}: {}", "Error".red(), err);
             io::Error::new(io::ErrorKind::InvalidInput, err)
         })?;
 
-        CACert::save_cert(cert, ca_cert_file_str)?;
-        CACert::save_key(key, ca_key_file_str)?;
+        match CACert::save_cert(cert, ca_cert_file_str) {
+            Ok(()) => {
+                println!(
+                    "{}: CA Root Certificate saved at: {} 👍",
+                    "Note".green(),
+                    ca_cert_file_str
+                );
+            }
+            Err(err) => {
+                eprintln!("{}", err);
+                std::process::exit(1);
+            }
+        };
+        match CACert::save_key(key, ca_key_file_str) {
+            Ok(()) => {
+                println!(
+                    "{}: CA Root Private Key saved at: {} 👍",
+                    "Note".green(),
+                    ca_cert_file_str
+                );
+            }
+            Err(err) => {
+                eprintln!("{}", err);
+                std::process::exit(1);
+            }
+        };
         Ok(())
     } else {
         let err: String = "Unable to get Data Directory".to_string();
-        eprintln!("{}", err);
+        eprintln!("{}: {}", "Error".red(), err);
         Err(Box::new(io::Error::new(io::ErrorKind::NotFound, err)))
     }
 }
 
-pub fn _path_exists(path: &str) -> bool {
+#[allow(dead_code)]
+pub fn path_exists(path: &str) -> bool {
     Path::new(path).exists()
 }
 
-pub fn _binary_exists(binary: &str) -> bool {
+#[allow(dead_code)]
+pub fn binary_exists(binary: &str) -> bool {
     Command::new(binary)
         .output()
         .map(|output: Output| output.status.success())
         .unwrap_or(false)
+}
+
+#[allow(dead_code)]
+pub fn get_unique_hash(csr_path: &str) -> Result<String, io::Error> {
+    let mut file: File = File::open(csr_path)?;
+    let mut csr_contents: Vec<u8> = Vec::new();
+    file.read_to_end(&mut csr_contents)?;
+    let mut hasher: Sha256 = Sha256::new();
+    hasher.update(&csr_contents);
+    let result: [u8; 32] = hasher.finish();
+    let mut unique_name: String = URL_SAFE.encode(result);
+    unique_name = unique_name.trim_end_matches('=').to_string();
+
+    Ok(unique_name)
 }

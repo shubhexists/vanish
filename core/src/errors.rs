@@ -1,7 +1,7 @@
+use colored::*;
 use core::fmt;
 use openssl::error::ErrorStack;
 use std::error::Error;
-
 pub type CertKeyResult<T> = Result<T, CertKeyPairError>;
 pub type SerialNumberResult<T> = Result<T, SerialNumberError>;
 
@@ -14,9 +14,16 @@ pub enum CertKeyPairError {
 impl fmt::Display for CertKeyPairError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::PKeyCreationError(err) => write!(f, "Error Creating Key File : {}", err),
+            Self::PKeyCreationError(err) => {
+                write!(f, "{}: Creating Key File : {}", "Error".red(), err)
+            }
             Self::RSAGenerationError(err) => {
-                write!(f, "Error Generating Certificate File : {}", err)
+                write!(
+                    f,
+                    "{}: Generating Certificate File : {}",
+                    "Error".red(),
+                    err
+                )
             }
         }
     }
@@ -35,13 +42,23 @@ impl fmt::Display for SerialNumberError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BigNumberInitializationError(err) => {
-                write!(f, "Error Initializing Big Number : {}", err)
+                write!(f, "{}: Initializing Big Number : {}", "Error".red(), err)
             }
             Self::RandomBigNumberGenerationError(err) => {
-                write!(f, "Error creating a Random Big Number : {}", err)
+                write!(
+                    f,
+                    "{}: creating a Random Big Number : {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::ConvertBigNumberToASN1Error(err) => {
-                write!(f, "Error Converting Big Number to ASN1Integer: {}", err)
+                write!(
+                    f,
+                    "{}: Converting Big Number to ASN1Integer: {}",
+                    "Error".red(),
+                    err
+                )
             }
         }
     }

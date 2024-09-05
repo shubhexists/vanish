@@ -1,5 +1,5 @@
 use super::errors::FirefoxTrustStoreError;
-use std::process::exit;
+use std::process::{exit, Stdio};
 use std::{
     env, fs, io,
     path::{Path, PathBuf},
@@ -82,12 +82,9 @@ impl FirefoxTrustStore {
 
     pub fn find_cert_directories(&self) -> Result<Vec<PathBuf>, FirefoxTrustStoreError> {
         let mut cert_dirs: Vec<PathBuf> = Vec::new();
-        println!("Firefox Profiles: {:?}", &self.firefox_profile);
         for profile_dir in &self.firefox_profile {
             let path: &Path = Path::new(profile_dir);
-            println!("{:?} exists: {:?}", &path, &path.exists());
             if path.exists() && path.is_dir() {
-                println!("Path is a dir: {:?}", &path);
                 for entry in fs::read_dir(path)
                     .map_err(|err: io::Error| FirefoxTrustStoreError::IOError(err))?
                 {
@@ -127,6 +124,7 @@ impl FirefoxTrustStore {
                         .arg(&self.ca_unique_name)
                         .arg("-i")
                         .arg(&self.vanish_ca_path)
+                        .stdout(Stdio::null())
                         .status();
 
                     match cmd_result {

@@ -1,4 +1,5 @@
 use crate::errors::{CertKeyPairError, SerialNumberError};
+use colored::*;
 use core::fmt;
 use openssl::error::ErrorStack;
 use std::{error::Error, io};
@@ -35,94 +36,170 @@ impl fmt::Display for X509Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::CertificateStackPushError(err) => {
-                write!(f, "Failed to push item to stack: {}", err)
+                write!(
+                    f,
+                    "{}: Failed to push item to stack: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::CertificateStackInitializationError(err) => {
-                write!(f, "Failed to initialize extension stack: {}", err)
+                write!(
+                    f,
+                    "{}: Failed to initialize extension stack: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::InitCARequestCertKeyPairError(err) => {
                 write!(
                     f,
-                    "Failed to initialize Certificate Signing Request : {}",
+                    "{}: Failed to initialize Certificate Signing Request : {}",
+                    "Error".red(),
                     err
                 )
             }
             Self::X509NameBuilderInitializeError(err) => {
-                write!(f, "Failed to initialize Name Builder: {}", err)
+                write!(
+                    f,
+                    "{}: Failed to initialize Name Builder: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::X509NameBuilderEntryError(err, entry, value) => {
                 write!(
                     f,
-                    "Error adding entry {} in name builder with value {} : {}",
-                    entry, value, err
+                    "{}: Adding entry {} in name builder with value {} : {}",
+                    "Error".red(),
+                    entry,
+                    value,
+                    err
                 )
             }
             Self::X509CertificateBuilderInitializeError(err) => {
-                write!(f, "Failed to initialize Certificate Builder: {}", err)
+                write!(
+                    f,
+                    "{}: Failed to initialize Certificate Builder: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::X509CertificateBuilerEntryError(err, entry) => {
                 write!(
                     f,
-                    "Error adding entry {} in Certificate builder : {}",
-                    entry, err
+                    "{}: adding entry {} in Certificate builder : {}",
+                    "Error".red(),
+                    entry,
+                    err
                 )
             }
             Self::X509CSRToPEMError(err) => {
-                write!(f, "Error Converting Certificate to PEM : {}", err)
+                write!(
+                    f,
+                    "{}: Converting Certificate to PEM : {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::X509PEMFileCreationError(err) => {
-                write!(f, "Error creating PEM file at specified location: {}", err)
+                write!(
+                    f,
+                    "{}: creating PEM file at specified location: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::X509WriteToFileError(err) => {
-                write!(f, "Error writing to specified PEM file: {}", err)
+                write!(
+                    f,
+                    "{}: writing to specified PEM file: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::InitSerialNumberGenerationError(err) => {
-                write!(f, "Error Generating Random Serial Number -> {}", err)
+                write!(
+                    f,
+                    "{}: Generating Random Serial Number -> {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::GenerateNotBeforeError(err) => {
-                write!(f, "Error Generating Not Before Time: {}", err)
+                write!(f, "{}: Generating Not Before Time: {}", "Error".red(), err)
             }
             Self::GenerateNotAfterError(err) => {
-                write!(f, "Error Generating Not After Time: {}", err)
+                write!(f, "{}: Generating Not After Time: {}", "Error".red(), err)
             }
             Self::BasicConstraintsInitializeError(err) => {
                 write!(
                     f,
-                    "Error Initializing Basic Constrainsts for Certificate: {}",
+                    "{}: Initializing Basic Constrainsts for Certificate: {}",
+                    "Error".red(),
                     err
                 )
             }
             Self::ErrorGettingPublicKeyFromCSR(err) => {
-                write!(f, "Error getting Public Key From CSR: {}", err)
+                write!(f, "{}: getting Public Key From CSR: {}", "Error".red(), err)
             }
             Self::KeyUsageBuildError(err) => {
-                write!(f, "Error building Key Usage for Certificate: {}", err)
+                write!(
+                    f,
+                    "{}: building Key Usage for Certificate: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::ExtendedKeyUsageBuildError(err) => {
                 write!(
                     f,
-                    "Error building Extended Key Usage for Certificate: {}",
+                    "{}: building Extended Key Usage for Certificate: {}",
+                    "Error".red(),
                     err
                 )
             }
             Self::ErrorReadingCertFile(err, path) => {
-                writeln!(f, "Error Reading Cert File at Path {} : {}", path, err)
+                writeln!(
+                    f,
+                    "{}: Reading Cert File at Path {} : {}",
+                    "Error".red(),
+                    path,
+                    err
+                )
             }
             Self::ErrorConvertingFileToData(err, path) => {
-                writeln!(f, "Error Converting file {} to desired data: {}", path, err)
+                writeln!(
+                    f,
+                    "{}: Converting file {} to desired data: {}",
+                    "Error".red(),
+                    path,
+                    err
+                )
             }
             Self::PKCS8EncodingError(err) => {
-                writeln!(f, "Failed to encode generated key to PKCS8 Format: {}", err)
+                writeln!(
+                    f,
+                    "{}: Failed to encode generated key to PKCS8 Format: {}",
+                    "Error".red(),
+                    err
+                )
             }
             Self::PEMEncodingError(err) => {
                 writeln!(
                     f,
-                    "Failed to encode generated certificate to PEM Format: {}",
+                    "{}: Failed to encode generated certificate to PEM Format: {}",
+                    "Error".red(),
                     err
                 )
             }
             Self::SANCouldNotBuildError(err) => {
-                write!(f, "Error building Subject Alternative Name : {}", err)
+                write!(
+                    f,
+                    "{}: building Subject Alternative Name : {}",
+                    "Error".red(),
+                    err
+                )
             }
         }
     }

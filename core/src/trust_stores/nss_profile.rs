@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub struct NSSProfile {
-    pub has_nss: bool,
+    pub _has_nss: bool,
     pub has_certutil: bool,
     pub certutil_path: Option<String>,
     pub nss_dbs: Vec<String>,
@@ -60,7 +60,7 @@ impl NSSProfile {
         }
 
         Self {
-            has_nss,
+            _has_nss: has_nss,
             has_certutil,
             certutil_path,
             nss_dbs,
