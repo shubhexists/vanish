@@ -6,6 +6,8 @@ mod x509;
 use clap::{Parser, Subcommand};
 use commands::generate::generate;
 use std::env;
+#[cfg(test)]
+mod utils_tests;
 
 #[derive(Parser)]
 #[clap(

@@ -2,8 +2,7 @@ use crate::{
     trust_stores::{
         firefox::FirefoxTrustStore, nss::NSSValue, nss_profile::NSSProfile,
         utils::check_if_firefox_exists, CAValue,
-    },
-    x509::{ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert},
+    }, utils::get_unique_hash, x509::{ca_req::CAReq, distinguished_name::DistinguishedName, leaf_cert::LeafCert}
 };
 use colored::*;
 use openssl::{
@@ -20,8 +19,8 @@ pub fn generate_install(cert: X509) -> Result<(), Box<dyn Error>> {
     let ca_value_object: CAValue = CAValue { certificate: cert };
     ca_value_object.install_certificate()?;
     let nss_profile_object: NSSProfile = NSSProfile::new();
-    let ca_unique_name: String = "vanish-root-test-123456-shubham-brr".to_string();
     let caroot: String = "/home/jerry/.local/share/vanish/ca_cert.pem".to_string();
+    let ca_unique_name: String = get_unique_hash(&caroot)?;
     let mkcert: NSSValue =
         NSSValue::new(nss_profile_object, ca_unique_name.clone(), caroot.clone());
     let success: bool = mkcert.install_nss();

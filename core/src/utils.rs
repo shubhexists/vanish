@@ -2,6 +2,8 @@ use crate::{
     errors::{CertKeyPairError, CertKeyResult, SerialNumberError, SerialNumberResult},
     x509::{self, ca_cert::CACert},
 };
+use base64::engine::general_purpose::URL_SAFE;
+use base64::Engine;
 use colored::*;
 use openssl::{
     asn1::Asn1Integer,
@@ -9,9 +11,16 @@ use openssl::{
     error::ErrorStack,
     pkey::{PKey, Private},
     rsa::Rsa,
+    sha::Sha256,
     x509::X509,
 };
-use std::{error, fs, io, path::Path, process::Output};
+use std::{
+    error,
+    fs::{self, File},
+    io::{self, Read},
+    path::Path,
+    process::Output,
+};
 use std::{path::PathBuf, process::Command};
 
 pub fn generate_cert_key_pair() -> CertKeyResult<(Rsa<Private>, PKey<Private>)> {
@@ -149,13 +158,29 @@ pub fn save_generated_cert_key_files(
     }
 }
 
-pub fn _path_exists(path: &str) -> bool {
+#[allow(dead_code)]
+pub fn path_exists(path: &str) -> bool {
     Path::new(path).exists()
 }
 
-pub fn _binary_exists(binary: &str) -> bool {
+#[allow(dead_code)]
+pub fn binary_exists(binary: &str) -> bool {
     Command::new(binary)
         .output()
         .map(|output: Output| output.status.success())
         .unwrap_or(false)
+}
+
+#[allow(dead_code)]
+pub fn get_unique_hash(csr_path: &str) -> Result<String, io::Error> {
+    let mut file: File = File::open(csr_path)?;
+    let mut csr_contents: Vec<u8> = Vec::new();
+    file.read_to_end(&mut csr_contents)?;
+    let mut hasher: Sha256 = Sha256::new();
+    hasher.update(&csr_contents);
+    let result: [u8; 32] = hasher.finish();
+    let mut unique_name: String = URL_SAFE.encode(result);
+    unique_name = unique_name.trim_end_matches('=').to_string();
+
+    Ok(unique_name)
 }
