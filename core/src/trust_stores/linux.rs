@@ -1,3 +1,4 @@
+use colored::*;
 use openssl::error::ErrorStack;
 use openssl::x509::X509;
 use std::fs;
@@ -35,7 +36,7 @@ impl CAValue {
         match store {
             Some(store) => {
                 let path: String = store.get_path();
-                println!("Adding file to trust store: {}", path);
+                println!("{}: Adding file to trust store: {}", "Note".green(), path);
                 let pem_path: PathBuf = Path::new(&path).join("vanish-root.crt");
 
                 if let Err(err) = fs::create_dir_all(&path) {
@@ -45,7 +46,7 @@ impl CAValue {
 
                 match CAValue::save_cert(&self.certificate, pem_path.to_str().unwrap()) {
                     Ok(_) => println!("Certificate saved at: {}", pem_path.display()),
-                    Err(err) => eprintln!("Failed to save certificate: {}", err),
+                    Err(err) => eprintln!("{}", err),
                 }
             }
             None => {

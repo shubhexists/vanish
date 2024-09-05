@@ -112,19 +112,40 @@ impl Certificate for CACert {
 
 impl CACert {
     pub fn load_ca_cert(cert_path: &str, key_path: &str) -> X509Result<(X509, PKey<Private>)> {
-        let cert: X509 = X509::from_pem(&std::fs::read(cert_path).map_err(|err: io::Error| {
-            X509Error::ErrorReadingCertFile(err, cert_path.to_string())
-        })?)
-        .map_err(|err: ErrorStack| {
-            X509Error::ErrorConvertingFileToData(err, cert_path.to_string())
-        })?;
-        let key: PKey<Private> =
-            PKey::private_key_from_pem(&std::fs::read(key_path).map_err(|err: io::Error| {
+        let cert: X509 =
+            match X509::from_pem(&std::fs::read(cert_path).map_err(|err: io::Error| {
                 X509Error::ErrorReadingCertFile(err, cert_path.to_string())
-            })?)
-            .map_err(|err: ErrorStack| {
-                X509Error::ErrorConvertingFileToData(err, key_path.to_string())
-            })?;
+            })?) {
+                Ok(certificate) => {
+                    println!("Reading Certificate at {} ✅", cert_path);
+                    certificate
+                }
+                Err(err) => {
+                    println!("Reading Certificate at {} ❌", cert_path);
+                    return Err(X509Error::ErrorConvertingFileToData(
+                        err,
+                        cert_path.to_string(),
+                    ));
+                }
+            };
+
+        let key: PKey<Private> =
+            match PKey::private_key_from_pem(&std::fs::read(key_path).map_err(
+                |err: io::Error| X509Error::ErrorReadingCertFile(err, key_path.to_string()),
+            )?) {
+                Ok(key) => {
+                    println!("Reading Key at {} ✅", key_path);
+                    key
+                },
+                Err(err) => {
+                    println!("Reading Key at {} ❌", key_path);
+                    return Err(X509Error::ErrorConvertingFileToData(
+                        err,
+                        key_path.to_string(),
+                    ));
+                }
+            };
+
         Ok((cert, key))
     }
 

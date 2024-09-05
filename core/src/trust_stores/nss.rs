@@ -1,8 +1,9 @@
 use crate::trust_stores::nss_profile::NSSProfile;
+use colored::*;
 use std::{
     fs, io,
     path::Path,
-    process::{Command, ExitStatus},
+    process::{Command, ExitStatus, Stdio},
 };
 
 pub struct NSSValue {
@@ -28,7 +29,6 @@ impl NSSValue {
         let mut success: bool = true;
 
         if self.for_each_nss_profile(|profile: &str| {
-            println!("{:?}", self.profile.certutil_path);
             let cmd: Result<ExitStatus, io::Error> =
                 Command::new(self.profile.certutil_path.as_ref().unwrap())
                     .arg("-V")
@@ -38,6 +38,7 @@ impl NSSValue {
                     .arg("L")
                     .arg("-n")
                     .arg(&self.ca_unique_name)
+                    .stdout(Stdio::null())
                     .status();
 
             if cmd.is_err() || !cmd.unwrap().success() {
@@ -64,6 +65,7 @@ impl NSSValue {
                     .arg(&self.ca_unique_name)
                     .arg("-i")
                     .arg(&self.caroot)
+                    .stdout(Stdio::null())
                     .status();
 
             if let Err(err) = cmd {
@@ -71,7 +73,7 @@ impl NSSValue {
             }
         }) == 0
         {
-            eprintln!("ERROR: no NSS security databases found");
+            eprintln!("{}: No NSS security databases found", "Error".red());
             return false;
         }
 
@@ -94,6 +96,7 @@ impl NSSValue {
                     .arg(profile)
                     .arg("-n")
                     .arg(&self.ca_unique_name)
+                    .stdout(Stdio::null())
                     .status();
 
             if let Err(err) = cmd {
@@ -107,9 +110,7 @@ impl NSSValue {
         F: FnMut(&str),
     {
         let mut found: usize = 0;
-        let profiles = &self.profile.nss_dbs;
-
-        println!("{:?}", profiles);
+        let profiles: &Vec<String> = &self.profile.nss_dbs;
 
         for profile in profiles {
             let stat: Result<fs::Metadata, io::Error> = Path::new(profile).metadata();

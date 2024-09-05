@@ -88,17 +88,37 @@ impl CAReq {
     }
 
     pub fn read_csr_from_file(file_name: &str) -> X509Result<X509Req> {
-        let mut file: File = File::open(file_name).map_err(|err: io::Error| {
-            X509Error::ErrorReadingCertFile(err, file_name.to_string())
-        })?;
+        println!();
+        let mut file: File = match File::open(file_name) {
+            Ok(f) => f,
+            Err(err) => {
+                eprintln!("Reading Signing Request at {} ❌", file_name);
+                return Err(X509Error::ErrorReadingCertFile(err, file_name.to_string()));
+            }
+        };
+
         let mut buffer: Vec<u8> = Vec::new();
-        file.read_to_end(&mut buffer).map_err(|err: io::Error| {
-            X509Error::ErrorReadingCertFile(err, file_name.to_string())
-        })?;
-        let csr: X509Req = X509Req::from_pem(&buffer).map_err(|err: ErrorStack| {
-            X509Error::ErrorConvertingFileToData(err, file_name.to_string())
-        })?;
-        Ok(csr)
+        match file.read_to_end(&mut buffer) {
+            Ok(_) => (),
+            Err(err) => {
+                eprintln!("Reading Signing Request at {} ❌", file_name);
+                return Err(X509Error::ErrorReadingCertFile(err, file_name.to_string()));
+            }
+        };
+
+        match X509Req::from_pem(&buffer) {
+            Ok(csr) => {
+                println!("Reading Signing Request at {} ✅", file_name);
+                Ok(csr)
+            }
+            Err(err) => {
+                eprintln!("Reading Signing Request at {} ❌", file_name);
+                Err(X509Error::ErrorConvertingFileToData(
+                    err,
+                    file_name.to_string(),
+                ))
+            }
+        }
     }
 
     pub fn save_key(key: &PKey<Private>, path: &str) -> X509Result<()> {
