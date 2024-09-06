@@ -49,12 +49,11 @@ impl CAValue {
         match store {
             Some(store) => {
                 let path: String = store.get_path();
-                println!("{}: Adding file to trust store: {}", "Note".green(), path);
                 let pem_path: PathBuf =
                     Path::new(&path).join(format!("ca_{}.pem", self.ca_uniques_name));
 
                 if self.is_certificate_installed(&pem_path) {
-                    println!("{}: Certificate already installed.", "Note".green());
+                    println!("{}: Certificate already installed  ✅.", "Info".blue(),);
                     return Ok(());
                 }
 

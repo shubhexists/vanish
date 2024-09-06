@@ -106,7 +106,7 @@ impl NSSValue {
         if all_installed {
             println!(
                 "{}: Certificate already installed in all NSS (Browser) profiles ✅.",
-                "Note".green()
+                "Info".blue()
             );
             return true;
         }

@@ -158,7 +158,7 @@ impl FirefoxTrustStore {
         if all_installed {
             println!(
                 "{}: Certificate already installed in all Firefox profiles ✅.",
-                "Note".green()
+                "Info".blue()
             );
             return;
         } else {
