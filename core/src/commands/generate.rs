@@ -15,6 +15,7 @@ use openssl::{
     x509::{X509Req, X509},
 };
 use std::{
+    env::current_dir,
     error::{self, Error},
     path::PathBuf,
 };
@@ -151,9 +152,16 @@ pub fn generate(
                 }
                 println!();
                 println!(
-                    "{}: All Successful Certificates and their corresponding keys are saved at : {}",
+                    "{}: All successful certificates and their corresponding keys are saved at: {}",
                     "Note".green(),
-                    output.unwrap()
+                    match output {
+                        Some(a) => a,
+                        None => current_dir()
+                            .expect("Failed to get the current directory")
+                            .to_str()
+                            .expect("Failed to convert directory to string")
+                            .to_string(),
+                    }
                 );
             }
             if install {}
@@ -231,7 +239,14 @@ pub fn generate(
             println!(
                 "{}: All Successful Certificates and their corresponding keys are saved at : {}",
                 "Note".green(),
-                output.unwrap()
+                match output {
+                    Some(a) => a,
+                    None => current_dir()
+                        .expect("Failed to get the current directory")
+                        .to_str()
+                        .expect("Failed to convert directory to string")
+                        .to_string(),
+                }
             );
         }
     } else {
@@ -325,7 +340,14 @@ pub fn generate(
             println!(
                 "{}: All Successful Certificates and their corresponding keys are saved at : {}",
                 "Note".green(),
-                output.unwrap()
+                match output {
+                    Some(a) => a,
+                    None => current_dir()
+                        .expect("Failed to get the current directory")
+                        .to_str()
+                        .expect("Failed to convert directory to string")
+                        .to_string(),
+                }
             );
         }
     }
