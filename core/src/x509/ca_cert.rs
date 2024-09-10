@@ -12,7 +12,7 @@ use openssl::{
     rsa::Rsa,
     x509::{extension::BasicConstraints, X509Builder, X509Name, X509},
 };
-use std::io::Write;
+use std::{fs, io::Write};
 use std::{fs::File, io};
 
 pub struct CACert {
@@ -112,22 +112,21 @@ impl Certificate for CACert {
 
 impl CACert {
     pub fn load_ca_cert(cert_path: &str, key_path: &str) -> X509Result<(X509, PKey<Private>)> {
-        let cert: X509 =
-            match X509::from_pem(&std::fs::read(cert_path).map_err(|err: io::Error| {
-                X509Error::ErrorReadingCertFile(err, cert_path.to_string())
-            })?) {
-                Ok(certificate) => {
-                    println!("Reading Certificate at {} ✅", cert_path);
-                    certificate
-                }
-                Err(err) => {
-                    println!("Reading Certificate at {} ❌", cert_path);
-                    return Err(X509Error::ErrorConvertingFileToData(
-                        err,
-                        cert_path.to_string(),
-                    ));
-                }
-            };
+        let cert: X509 = match X509::from_pem(&fs::read(cert_path).map_err(|err: io::Error| {
+            X509Error::ErrorReadingCertFile(err, cert_path.to_string())
+        })?) {
+            Ok(certificate) => {
+                println!("Reading Certificate at {} ✅", cert_path);
+                certificate
+            }
+            Err(err) => {
+                println!("Reading Certificate at {} ❌", cert_path);
+                return Err(X509Error::ErrorConvertingFileToData(
+                    err,
+                    cert_path.to_string(),
+                ));
+            }
+        };
 
         let key: PKey<Private> =
             match PKey::private_key_from_pem(&std::fs::read(key_path).map_err(
@@ -136,7 +135,7 @@ impl CACert {
                 Ok(key) => {
                     println!("Reading Key at {} ✅", key_path);
                     key
-                },
+                }
                 Err(err) => {
                     println!("Reading Key at {} ❌", key_path);
                     return Err(X509Error::ErrorConvertingFileToData(

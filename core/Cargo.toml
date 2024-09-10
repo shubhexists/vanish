@@ -19,5 +19,5 @@ colored = "2.0"
 base64 = "0.21"
 tempfile = "3.3"
 
-# [target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
 plist = "1.7.0"
